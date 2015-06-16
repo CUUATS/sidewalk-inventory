@@ -1,6 +1,7 @@
 from cuuats.datamodel import BaseFeature, OIDField, GeometryField, \
-    NumericField, StringField, GlobalIDField, BreaksScale, DictScale, \
-    RelationshipSummaryField, ForeignKey
+    NumericField, StringField, GlobalIDField, BreaksScale, \
+    WeightsField, ScaleField, MethodField, DictScale, \
+    StaticScale, RelationshipSummaryField, ForeignKey
 from cuuats.datamodel.features import IDENTIFIER_RE
 
 # Scales
@@ -434,6 +435,124 @@ class CurbRamp(InventoryFeature):
     AutoQAComment = StringField('Auto QA Comment')
     AutoQAOverride = NumericField('Override Auto QA Status')
 
+    # Score fields
+    ScoreRampWidth = ScaleField(
+        'Ramp Width Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=(
+            ('not self.in_median', WIDTH_SCALE),
+            ('self.in_median', IN_MEDIAN_WIDTH_SCALE),
+        ),
+        value_field='RampWidth'
+    )
+    ScoreRampCrossSlope = ScaleField(
+        'Ramp Cross Slope Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=CROSS_SLOPE_SCALE,
+        value_field='RampCrossSlope')
+
+    ScoreRampRunningSlope = ScaleField(
+        'Ramp Running Slope Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=RAMP_RUNNING_SLOPE_SCALE,
+        value_field='RampRunningSlope')
+
+    ScoreDetectableWarningType = ScaleField(
+        'DWS Type Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=DWS_TYPE_SCALE,
+        use_description=True,
+        value_field='DetectableWarningType')
+
+    ScoreDetectableWarningWidth = ScaleField(
+        'DWS Width Score',
+        scale=(
+            ('not self.in_median', DWS_WIDTH_SCALE),
+            ('self.in_median', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='DetectableWarningWidth / RampWidth')
+
+    ScoreDetectableWarningLength = ScaleField(
+        'DWS Length Score',
+        scale=(
+            ('not self.in_median', DWS_LENGTH_SCALE),
+            ('self.in_median', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='DetectableWarningLength')
+
+    ScoreGutterCrossSlope = ScaleField(
+        'Gutter Cross Slope Score',
+        scale=CROSS_SLOPE_SCALE,
+        condition='self.qa_complete and self.has_ramp',
+        value_field='GutterCrossSlope')
+
+    ScoreGutterRunningSlope = ScaleField(
+        'Gutter Running Slope Score',
+        scale=GUTTER_RUNNING_SLOPE_SCALE,
+        condition='self.qa_complete and self.has_ramp',
+        value_field='GutterRunningSlope')
+
+    ScoreLandingDimensions = ScaleField(
+        'Landing Dimensions Score',
+        scale=(
+            ('not self.is_blended_transition', LANDING_DIMENSIONS_SCALE),
+            ('self.is_blended_transition', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='min(LandingWidth, LandingLength)')
+
+    ScoreLandingSlope = ScaleField(
+        'Landing Slope Score',
+        scale=(
+            ('not self.is_blended_transition', CROSS_SLOPE_SCALE),
+            ('self.is_blended_transition', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='max(LandingRunningSlope, LandingCrossSlope)')
+
+    ScoreLargestPavementFault = ScaleField(
+        'Largest Vertical Fault Score',
+        scale=LARGEST_VFAULT_SCALE,
+        condition='self.qa_complete and self.has_ramp',
+        value_field='LargestPavementFault',
+        use_description=True)
+
+    ScoreObstruction = ScaleField(
+        'Obstruction Score',
+        scale=OBSTRUCTION_SCALE,
+        condition='self.qa_complete and self.has_ramp',
+        value_field='Obstruction',
+        use_description=True)
+
+    ScoreFlareSlope = ScaleField(
+        'Flare Slope Score',
+        scale=(
+            ('self.has_flares', FLARE_SLOPE_SCALE),
+            ('not self.has_flares', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='FlareSlope')
+
+    ScoreCompliance = WeightsField(
+        'Compliance Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreRampWidth': 0.1,
+            'ScoreRampCrossSlope': 0.1,
+            'ScoreRampRunningSlope': 0.1,
+            'ScoreDetectableWarningType': 0.1,
+            'ScoreDetectableWarningWidth': 0.05,
+            'ScoreDetectableWarningLength': 0.05,
+            'ScoreGutterCrossSlope': 0.05,
+            'ScoreGutterRunningSlope': 0.05,
+            'ScoreLandingDimensions': 0.1,
+            'ScoreLandingSlope': 0.1,
+            'ScoreLargestPavementFault': 0.1,
+            'ScoreObstruction': 0.1,
+        })
+
     @property
     def has_ramp(self):
         return self.get_description_for('RampType') != 'None'
@@ -540,6 +659,25 @@ class Crosswalk(InventoryFeature):
     MarkingType = NumericField('Marking Type', required=True)
     Comment = StringField('Comment')
 
+    # Score fields
+    ScoreWidth = ScaleField(
+        'Width Score',
+        condition='self.qa_complete',
+        scale=BreaksScale([36, 42, 48], [0, 33, 67, 100], False),
+        value_field='Width')
+    ScoreCrossSlope = ScaleField(
+        'Cross Slope Score',
+        condition='self.qa_complete',
+        scale=BreaksScale([5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True),
+        value_field='CrossSlope')
+    ScoreCompliance = WeightsField(
+        'Compliance Score',
+        condition='self.qa_complete',
+        weights={
+            'ScoreWidth': 0.5,
+            'ScoreCrossSlope': 0.5,
+        })
+
     def clean(self):
         markings_desc = ['No Painted Markings', 'Box for Exclusive Period']
         no_paint, box = [
@@ -578,6 +716,69 @@ class PedestrianSignal(InventoryFeature):
     LocatorTone = NumericField('Locator Tone',  required=True)
     PassiveDetection = NumericField('Passive Detector', required=True)
     Comment = StringField('Comment')
+
+    # Score fields
+    ScoreButtonSize = ScaleField(
+        'Button Size Score',
+        condition='self.qa_complete and self.has_button',
+        scale=DictScale({
+            'Very small': 33,
+            'Medium': 67,
+            'Accessible': 100,
+        }),
+        value_field='PedButtonSize',
+        use_description=True)
+    ScoreButtonHeight = ScaleField(
+        'Button Height Score',
+        condition='self.qa_complete and self.has_button',
+        scale=BreaksScale(
+            [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True),
+        value_field='ButtonHeight')
+    ScoreButtonPositionAppearance = MethodField(
+        'Button Position and Appearance Score',
+        condition='self.qa_complete and self.has_button',
+        method_name='_position_appearance_score',
+        storage={'field_type': 'SHORT'})
+    ScoreTactileFeatures = MethodField(
+        'Tactile Features Score',
+        condition='self.qa_complete',
+        method_name='_tactile_features_score',
+        storage={'field_type': 'SHORT'})
+    ScoreCompliance = MethodField(
+        'Compliance Score',
+        condition='self.qa_complete',
+        method_name='_compliance_score')
+
+    def _position_appearance_score(self, field_name):
+        yes = self.source.get_coded_value('YesOrNo', 'Yes')
+        score = 0
+        if self.ButtonCount == 1 or self.ButtonSpacing == yes:
+            score += 15
+        if self.ButtonOffsetFCurb == yes:
+            score += 15
+        if self.AllWeatherSurface == yes:
+            score += 15
+        if self.HighContrastButton == yes:
+            score += 25
+        if self.LocatorTone == yes:
+            score += 30
+        return score
+
+    def _tactile_features_score(self, field_name):
+        score = 0
+        if self.TactileArrowPresent:
+            score += 50
+        if self.VibrotactileSignal:
+            score += 50
+        return score
+
+    def _compliance_score(self, field_name):
+        if self.has_button:
+            return (0.2 * self.ScoreButtonSize +
+                    0.2 * self.ScoreButtonHeight +
+                    0.3 * self.ScoreButtonPositionAppearance +
+                    0.3 * self.ScoreTactileFeatures)
+        return self.ScoreTactileFeatures
 
     @property
     def has_button(self):
