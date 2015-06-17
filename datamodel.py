@@ -397,7 +397,7 @@ class CurbRamp(InventoryFeature):
 
     FlareSlope = SlopeField(
         'Flare Slope',
-        max=25,
+        max=50,
         required_if='self.has_ramp')
 
     PavementFaultCount = NumericField(
