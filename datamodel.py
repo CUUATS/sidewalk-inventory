@@ -1,6 +1,10 @@
+"""
+Sidewalk Inventory and Assessment data model.
+"""
+
 from cuuats.datamodel import BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, BreaksScale, DictScale, \
-    RelationshipSummaryField, ForeignKey
+    ForeignKey
 from cuuats.datamodel.features import IDENTIFIER_RE
 
 # Scales
@@ -116,31 +120,29 @@ class SidewalkSegment(BaseFeature):
     bike_facility = StringField('Bicycle Facility')
     safe_route = StringField('Safe Route to School')
 
-    summary_count = RelationshipSummaryField(
-        'Summary Count',
-        relationship='SidewalkNearestSegment',
-        summary_field='OBJECTID',
-        statistic='COUNT',
-        where_clause='PointType = 2',
-        default=0)
+    summary_count = NumericField(
+        'Summary Count')
 
-    driveway_count = RelationshipSummaryField(
-        'Driveway Count',
-        relationship='SidewalkNearestSegment',
-        summary_field='OBJECTID',
-        statistic='COUNT',
-        where_clause='PointType = 1',
-        default=0)
+    driveway_count = NumericField(
+        'Driveway Count')
 
-    localissue_count = RelationshipSummaryField(
-        'Local Issue Count',
-        relationship='SidewalkNearestSegment',
-        summary_field='OBJECTID',
-        statistic='COUNT',
-        where_clause='PointType = 3',
-        default=0)
+    localissue_count = NumericField(
+        'Local Issue Count')
 
     Shape = GeometryField('SHAPE', order=1)
+
+    def update_sidewalk_fields(self):
+        self.summary_count = 0
+        self.driveway_count = 0
+        self.localissue_count = 0
+
+        for sw in self.sidewalk_set:
+            if sw.is_summary:
+                self.summary_count += 1
+            elif sw.is_driveway:
+                self.driveway_count += 1
+            elif sw.is_localissue:
+                self.localissue_count += 1
 
 
 class InventoryFeature(BaseFeature):
@@ -272,6 +274,10 @@ class Sidewalk(InventoryFeature):
     @property
     def is_driveway(self):
         return self.get_description_for('PointType') == 'Driveway'
+
+    @property
+    def is_localissue(self):
+        return self.get_description_for('PointType') == 'Local Issue'
 
     def clean(self):
         # Replace N/As with Nones for summary points.
@@ -590,7 +596,7 @@ class PedestrianSignal(InventoryFeature):
         if not self.has_button:
             for field_name in self.BUTTON_FIELDS:
                 if getattr(self, field_name) is None:
-                    field = self.get_field(field_name)
+                    field = self.fields.get(field_name)
                     if field.domain_name is not None:
                         self.source.set_by_description(field_name, 'N/A')
                     else:
