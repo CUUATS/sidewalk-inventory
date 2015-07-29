@@ -1,3 +1,7 @@
+"""
+Sidewalk Inventory and Assessment progress tracking.
+"""
+
 import datetime
 import re
 from prettytable import PrettyTable
