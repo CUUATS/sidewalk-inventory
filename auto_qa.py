@@ -2,15 +2,23 @@
 Automatic quality assurance for Sidewalk Inventory and Assessment data.
 """
 
+import argparse
 from cuuats.datamodel import DataSource
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
 from production import DATA_PATH, SW_NAME, CR_NAME, CW_NAME, PS_NAME, SS_NAME
 
 PREFETCH_RELS = {
-    'CurbRamp': ['attachments']
+    'CurbRamp': ['attachments'],
 }
 
+# Parse command line arguments.
+parser = argparse.ArgumentParser('Automatic QA for sidewalk inventory data.')
+parser.add_argument('--no-rels', action='store_true', dest='no_rels',
+                    help='skip updating relationship fields')
+args = parser.parse_args()
+
+# Register feature classes.
 ds = DataSource(DATA_PATH)
 Sidewalk.register(ds, SW_NAME)
 CurbRamp.register(ds, CR_NAME)
@@ -46,14 +54,15 @@ for feature_class in feature_classes:
 
     print '%s: Updated %i rows' % (feature_class.name, update_count)
 
-# Update the nearest sidewalk segment relationship.
-print 'Updating nearest sidewalk segment...'
-ds.set_nearest('SidewalkNearestSegment', 25, update=True)
+if not args.no_rels:
+    # Update the nearest sidewalk segment relationship.
+    print 'Updating nearest sidewalk segment...'
+    ds.set_nearest('SidewalkNearestSegment', 25, update=True)
 
-# Update segment fields based on the nearest segment relationship.
-print 'Updating sidewalk segment statistics...'
-update_count = 0
-for segment in SidewalkSegment.objects.prefetch_related('sidewalk_set'):
-    segment.update_sidewalk_fields()
-    update_count += int(segment.save())
-print '%s: Updated %i rows' % (SidewalkSegment.name, update_count)
+    # Update segment fields based on the nearest segment relationship.
+    print 'Updating sidewalk segment statistics...'
+    update_count = 0
+    for segment in SidewalkSegment.objects.prefetch_related('sidewalk_set'):
+        segment.update_sidewalk_fields()
+        update_count += int(segment.save())
+    print '%s: Updated %i rows' % (SidewalkSegment.name, update_count)
