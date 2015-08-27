@@ -3,7 +3,7 @@ Automatic quality assurance for Sidewalk Inventory and Assessment data.
 """
 
 import argparse
-from cuuats.datamodel import DataSource
+from cuuats.datamodel import DataSource, D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
 from production import DATA_PATH, SW_NAME, CR_NAME, CW_NAME, PS_NAME, SS_NAME
@@ -34,14 +34,12 @@ feature_classes = [
 ]
 
 print 'Performing auto QA...'
-# Don't update deferred features or those requiring staff review.
-staff_review = ds.get_coded_value('QAStatus', 'Needs Staff Review')
-deferred = ds.get_coded_value('QAStatus', 'Deferred')
-
 for feature_class in feature_classes:
     update_count = 0
+
+    # Don't update deferred features or those requiring staff review.
     features = feature_class.objects.exclude(
-        QAStatus__in=[staff_review, deferred])
+        QAStatus__in=[D('Needs Staff Review'), D('Deferred')])
 
     if feature_class.__name__ in PREFETCH_RELS:
         rels = PREFETCH_RELS[feature_class.__name__]

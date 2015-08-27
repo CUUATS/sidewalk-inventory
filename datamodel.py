@@ -4,7 +4,7 @@ Sidewalk Inventory and Assessment data model.
 
 from cuuats.datamodel import BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, BreaksScale, DictScale, \
-    ForeignKey
+    ForeignKey, D
 from cuuats.datamodel.features import IDENTIFIER_RE
 
 # Scales
@@ -146,7 +146,7 @@ class InventoryFeature(BaseFeature):
         Is the QA status complete?
         """
 
-        return self.get_description_for('QAStatus') == 'Complete'
+        return self.QAStatus == D('Complete')
 
     def _get_eval_value(self, field):
         """
@@ -183,14 +183,8 @@ class InventoryFeature(BaseFeature):
         Perform automated quality assurance.
         """
 
-        # Get domain values.
-        qa_status_desc = ['Needs Field Review', 'Complete']
-        field_review, complete = [
-            self.get_coded_value_for('QAStatus', d) for d in qa_status_desc]
-
         # Apply QA unless the current status is Needs Staff Review.
-        if self.get_description_for(self.QASTATUS_FIELD) != \
-                'Needs Staff Review':
+        if getattr(self, self.QASTATUS_FIELD) != D('Needs Staff Review'):
             # Perform cleaning and validation.
             self.clean()
             messages = self.validate()
@@ -202,8 +196,10 @@ class InventoryFeature(BaseFeature):
                     m for m in messages if not m.endswith(' is missing')]
 
             # Set QA status based on the number of messages.
-            setattr(self, self.QASTATUS_FIELD,
-                    (len(messages) > 0 and field_review) or complete)
+            if len(messages) > 0:
+                setattr(self, self.QASTATUS_FIELD, D('Needs Field Review'))
+            else:
+                setattr(self, self.QASTATUS_FIELD, D('Complete'))
 
             # Overwrite existing QA comments.
             qacomment = '; '.join(messages)
@@ -248,30 +244,30 @@ class Sidewalk(InventoryFeature):
 
     @property
     def is_summary(self):
-        return self.get_description_for('PointType') == 'Summary'
+        return self.PointType == D('Summary')
 
     @property
     def is_driveway(self):
-        return self.get_description_for('PointType') == 'Driveway'
+        return self.PointType == D('Driveway')
 
     @property
     def is_localissue(self):
-        return self.get_description_for('PointType') == 'Local Issue'
+        return self.PointType == D('Local Issue')
 
     def clean(self):
         # Replace N/As with Nones for summary points.
         if self.is_summary:
             for field_name in ('LargestVerticalFault', 'SurfaceCondition',
                                'Obstruction'):
-                if self.get_description_for(field_name) == 'N/A':
-                    self.set_by_description(field_name, 'None')
+                if getattr(self, field_name) == D('N/A'):
+                    setattr(self, field_name, D('None'))
 
     def validate(self):
         messages = super(Sidewalk, self).validate()
         # Check that the largest vertical fault and number of vertical faults
         # are consistent.
         if self.is_summary and \
-            (self.get_description_for('LargestVerticalFault') == 'None') != \
+            (self.LargestVerticalFault == D('None')) != \
                 (self.VerticalFaultCount == 0):
             messages.append('Vertical Faults does not match Largest Fault')
         return messages
@@ -421,7 +417,7 @@ class CurbRamp(InventoryFeature):
 
     @property
     def has_ramp(self):
-        return self.get_description_for('RampType') != 'None'
+        return self.RampType != D('None')
 
     @property
     def has_left_approach(self):
@@ -441,16 +437,15 @@ class CurbRamp(InventoryFeature):
 
     @property
     def has_flares(self):
-        return self.get_description_for('EdgeTreatment') == 'Flared Sides'
+        return self.EdgeTreatment == D('Flared Sides')
 
     @property
     def has_dws(self):
-        return self.get_description_for('DetectableWarningType') not in \
-            ('None', 'N/A')
+        return self.DetectableWarningType not in (D('None'), D('N/A'))
 
     @property
     def in_median(self):
-        return self.get_description_for('InMedian') == 'Yes'
+        return self.InMedian == D('Yes')
 
     @property
     def is_blended_transition(self):
@@ -464,21 +459,21 @@ class CurbRamp(InventoryFeature):
             # Replace N/As with Nones.
             for field_name in ('DetectableWarningType', 'SurfaceCondition',
                                'LargestPavementFault', 'Obstruction'):
-                if self.get_description_for(field_name) == 'N/A':
-                    self.set_by_description(field_name, 'None')
+                if getattr(self, field_name) == D('N/A'):
+                    setattr(self, field_name, D('None'))
 
             # Replace N/A with No for In Median.
-            if self.get_description_for('InMedian') == 'N/A':
-                self.set_by_description('InMedian', 'No')
+            if self.InMedian == D('N/A'):
+                self.InMedian = D('No')
 
             # Set null responses to 0 in cases where no value is expected.
-            if self.get_description_for('DetectableWarningType') == 'None':
+            if self.DetectableWarningType == D('None'):
                 if self.DetectableWarningWidth is None:
                     self.DetectableWarningWidth = 0
                 if self.DetectableWarningLength is None:
                     self.DetectableWarningLength = 0
 
-            if self.get_description_for('EdgeTreatment') != 'Flared Sides':
+            if self.EdgeTreatment != D('Flared Sides'):
                 if self.FlareSlope is None:
                     self.FlareSlope = 0
 
@@ -486,18 +481,18 @@ class CurbRamp(InventoryFeature):
         messages = super(CurbRamp, self).validate()
         # Check that the largest vertical fault and number of vertical faults
         # are consistent.
-        if (self.get_description_for('LargestPavementFault') == 'None') != \
+        if (self.LargestPavementFault == D('None')) != \
                 (self.PavementFaultCount == 0):
             messages.append('Vertical Faults does not match Largest Fault')
 
         # Check that the edge treatment matches the flare slope value.
-        if (self.get_description_for('EdgeTreatment') == 'Flared Sides') != \
+        if (self.EdgeTreatment == D('Flared Sides')) != \
                 (self.FlareSlope > 0 or self.FlareSlope == -1):
             messages.append('Edge Treatment does not match Flare Slope')
 
         # Ignore validation messages (except for missing photo) if the ramp
         # type is None.
-        if self.get_description_for('RampType') == 'None':
+        if self.RampType == D('None'):
             messages = []
 
         # Check for a photo.
@@ -513,7 +508,7 @@ class CurbRamp(InventoryFeature):
 
         # Don't touch the QA Status if the Override Auto QA Status field
         # is set to Yes.
-        if self.get_description_for('AutoQAOverride') != 'Yes':
+        if self.AutoQAOverride != D('Yes'):
             return super(CurbRamp, self).perform_qa()
 
 
@@ -526,10 +521,8 @@ class Crosswalk(InventoryFeature):
     Comment = StringField('Comment')
 
     def clean(self):
-        markings_desc = ['No Painted Markings', 'Box for Exclusive Period']
-        no_paint, box = [
-            self.get_coded_value_for('MarkingType', d) for d in markings_desc]
-        if self.MarkingType in (no_paint, box) and self.Width is None:
+        no_width = (D('No Painted Markings'), D('Box for Exclusive Period'))
+        if self.MarkingType in no_width and self.Width is None:
             self.Width = 0
 
 
@@ -566,9 +559,7 @@ class PedestrianSignal(InventoryFeature):
 
     @property
     def has_button(self):
-        # TODO: Handle missing values better.
-        no_button = self.get_coded_value_for('PedButtonLocation', 'No Button')
-        return self.PedButtonLocation < no_button
+        return self.PedButtonLocation not in (D('No Button'), D('N/A'))
 
     def clean(self):
         # Set irrelevant fields to N/A for signals that don't have a button.
@@ -577,7 +568,7 @@ class PedestrianSignal(InventoryFeature):
                 if getattr(self, field_name) is None:
                     field = self.fields.get(field_name)
                     if field.domain_name is not None:
-                        self.source.set_by_description(field_name, 'N/A')
+                        setattr(self, field_name, D('N/A'))
                     else:
                         setattr(self, field_name, 0)
 
