@@ -66,27 +66,6 @@ FLARE_SLOPE_SCALE = BreaksScale(
     [10, 12, 14, 16, 18], [100, 80, 60, 40, 20, 0], True)
 
 
-class FeetInchesField(NumericField):
-    """
-    Field for decimal values representing feet.inches.
-    """
-
-    VALID_INCHES = [str(n).zfill(2) for n in range(1, 10)] + ['1', '11', '0']
-
-    def validate(self, value):
-        messages = super(FeetInchesField, self).validate(value)
-        if value is None:
-            return messages
-
-        value_parts = str(value).split('.')
-        if len(value_parts) == 2:
-            inches = value_parts[1]
-            if inches not in self.VALID_INCHES:
-                messages.append('%s has invalid inches' % (self.label,))
-
-        return messages
-
-
 class SlopeField(NumericField):
     """
     Field for slopes collected with a smart tool.
@@ -176,7 +155,7 @@ class InventoryFeature(BaseFeature):
         """
 
         value = getattr(self, field.name)
-        if not isinstance(field, FeetInchesField):
+        if not isinstance(field, NumericField):
             return value
 
         # We have a feet.inches field.
@@ -248,7 +227,7 @@ class Sidewalk(InventoryFeature):
 
     PointType = NumericField('Point Type', required=True)
     Material = NumericField('Material', required_if='self.is_summary')
-    Width = FeetInchesField('Width', max=50, required_if='self.is_summary')
+    Width = NumericField('Width', max=50*12, required_if='self.is_summary')
     CrossSlope = SlopeField('Cross Slope', max=25,
                             required_if='self.is_summary or self.is_driveway')
     SurfaceCondition = NumericField('Surface Condition',
@@ -311,11 +290,11 @@ class CurbRamp(InventoryFeature):
         'Material',
         required_if='self.has_ramp')
 
-    RampWidth = FeetInchesField(
+    RampWidth = NumericField(
         'Ramp Width',
         required_if='self.has_ramp')
 
-    RampLength = FeetInchesField(
+    RampLength = NumericField(
         'Ramp Length',
         required_if='self.has_ramp')
 
@@ -333,11 +312,11 @@ class CurbRamp(InventoryFeature):
         'DWS Type',
         required_if='self.has_ramp')
 
-    DetectableWarningWidth = FeetInchesField(
+    DetectableWarningWidth = NumericField(
         'DWS Width',
         required_if='self.has_ramp')
 
-    DetectableWarningLength = FeetInchesField(
+    DetectableWarningLength = NumericField(
         'DWS Length',
         required_if='self.has_ramp')
 
@@ -351,11 +330,11 @@ class CurbRamp(InventoryFeature):
         max=25,
         required_if='self.has_ramp')
 
-    LandingWidth = FeetInchesField(
+    LandingWidth = NumericField(
         'Landing Width',
         required_if='self.has_ramp')
 
-    LandingLength = FeetInchesField(
+    LandingLength = NumericField(
         'Landing Length',
         required_if='self.has_ramp')
 
@@ -369,7 +348,7 @@ class CurbRamp(InventoryFeature):
         max=25,
         required_if='self.has_ramp')
 
-    LeftApproachWidth = FeetInchesField(
+    LeftApproachWidth = NumericField(
         'Left Approach Width',
         required_if='self.has_ramp')
 
@@ -383,7 +362,7 @@ class CurbRamp(InventoryFeature):
         max=25,
         required_if='self.has_ramp')
 
-    RightApproachWidth = FeetInchesField(
+    RightApproachWidth = NumericField(
         'Right Approach Width',
         required_if='self.has_ramp')
 
@@ -541,7 +520,7 @@ class CurbRamp(InventoryFeature):
 class Crosswalk(InventoryFeature):
 
     SurfaceType = NumericField('Surface Type', required=True)
-    Width = FeetInchesField('Width', required=True)
+    Width = NumericField('Width', required=True)
     CrossSlope = SlopeField('Cross Slope', max=25, required=True)
     MarkingType = NumericField('Marking Type', required=True)
     Comment = StringField('Comment')
@@ -575,7 +554,7 @@ class PedestrianSignal(InventoryFeature):
     HighContrastButton = NumericField('High Contrast', required=True)
     TactileArrowPresent = NumericField('Tactile Arrow', required=True)
     VibrotactileSignal = NumericField('Vibrotactile Button', required=True)
-    ButtonHeight = FeetInchesField('Button Height', max=5, required=True)
+    ButtonHeight = NumericField('Button Height', max=5*12, required=True)
     AllWeatherSurface = NumericField('All Weather Surface', required=True)
     ButtonSpacing = NumericField('10 Feet Apart', required=True)
     ButtonOffsetFCurb = NumericField('Within 10 Feet of Curb', required=True)
