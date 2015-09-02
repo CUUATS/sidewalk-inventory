@@ -3,10 +3,10 @@ Automatic quality assurance for Sidewalk Inventory and Assessment data.
 """
 
 import argparse
-from cuuats.datamodel import DataSource, D
+from cuuats.datamodel import D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from production import DATA_PATH, SW_NAME, CR_NAME, CW_NAME, PS_NAME, SS_NAME
+from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
 
 PREFETCH_RELS = {
     'CurbRamp': ['attachments'],
@@ -19,12 +19,11 @@ parser.add_argument('--no-rels', action='store_true', dest='no_rels',
 args = parser.parse_args()
 
 # Register feature classes.
-ds = DataSource(DATA_PATH)
-Sidewalk.register(ds, SW_NAME)
-CurbRamp.register(ds, CR_NAME)
-Crosswalk.register(ds, CW_NAME)
-PedestrianSignal.register(ds, PS_NAME)
-SidewalkSegment.register(ds, SS_NAME)
+Sidewalk.register(SW_PATH)
+CurbRamp.register(CR_PATH)
+Crosswalk.register(CW_PATH)
+PedestrianSignal.register(PS_PATH)
+SidewalkSegment.register(SS_PATH)
 
 feature_classes = [
     Sidewalk,
@@ -55,7 +54,8 @@ for feature_class in feature_classes:
 if not args.no_rels:
     # Update the nearest sidewalk segment relationship.
     print 'Updating nearest sidewalk segment...'
-    ds.set_nearest('SidewalkNearestSegment', 25, update=True)
+    SidewalkSegment.workspace.set_nearest(
+        'SidewalkNearestSegment', 25, update=True)
 
     # Update segment fields based on the nearest segment relationship.
     print 'Updating sidewalk segment statistics...'

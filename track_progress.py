@@ -5,20 +5,18 @@ Sidewalk Inventory and Assessment progress tracking.
 import datetime
 import re
 from prettytable import PrettyTable
-from cuuats.datamodel import DataSource
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from production import DATA_PATH, SW_NAME, CR_NAME, CW_NAME, PS_NAME, SS_NAME, \
+from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
     SEGMENT_CSV, QASTATUS_CSV
 
 date_string = datetime.date.today().strftime('%m/%d/%Y')
 
-ds = DataSource(DATA_PATH)
-Sidewalk.register(ds, SW_NAME)
-CurbRamp.register(ds, CR_NAME)
-Crosswalk.register(ds, CW_NAME)
-PedestrianSignal.register(ds, PS_NAME)
-SidewalkSegment.register(ds, SS_NAME)
+Sidewalk.register(SW_PATH)
+CurbRamp.register(CR_PATH)
+Crosswalk.register(CW_PATH)
+PedestrianSignal.register(PS_PATH)
+SidewalkSegment.register(SS_PATH)
 
 # Calculate the percentage of segment length that is "complete."
 length_sum = [('Shape.STLength()', 'SUM')]
@@ -33,7 +31,8 @@ with open(SEGMENT_CSV, 'a') as progress:
     progress.write('%s,%s\n' % (date_string, pct_string))
 
 # Calculate the QA Status breakdown for each feature type.
-qastatus_cv = sorted(ds.get_domain('QAStatus').codedValues.items())
+qastatus_domain = Sidewalk.workspace.get_domain('QAStatus')
+qastatus_cv = sorted(qastatus_domain.codedValues.items())
 qastatus_keys = [cv[0] for cv in qastatus_cv]
 qastatus_values = [cv[1] for cv in qastatus_cv]
 qastatus_headers = [re.sub(r'[^A-Z]', '', s) for s in qastatus_values]
