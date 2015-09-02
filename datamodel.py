@@ -5,7 +5,6 @@ Sidewalk Inventory and Assessment data model.
 from cuuats.datamodel import BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, BreaksScale, DictScale, \
     ForeignKey, D
-from cuuats.datamodel.features import IDENTIFIER_RE
 
 # Scales
 WIDTH_SCALE = BreaksScale(
@@ -139,44 +138,6 @@ class InventoryFeature(BaseFeature):
     QAStatus = NumericField('QA Status', order=1)
     QAComment = StringField('QA Comment', order=1)
     SHAPE = GeometryField('SHAPE', order=1)
-
-    @property
-    def qa_complete(self):
-        """
-        Is the QA status complete?
-        """
-
-        return self.QAStatus == D('Complete')
-
-    def _get_eval_value(self, field):
-        """
-        Get the current value of the field, converting feet.inches values
-        to inches.
-        """
-
-        value = getattr(self, field.name)
-        if not isinstance(field, NumericField):
-            return value
-
-        # We have a feet.inches field.
-        if value is None:
-            return None
-
-        value_parts = ('%0.2f' % (value,)).split('.')
-        return int(value_parts[0]) * 12 + int(value_parts[1])
-
-    def eval(self, expression):
-        """
-        Evaluate the expression in the context of the feature instance.
-        """
-
-        # Override expression evaluation so that feet.inches fields evaluate
-        # to the value of the field in inches.
-        identifiers = IDENTIFIER_RE.findall(expression)
-        locals_dict = dict([(n, self._get_eval_value(f)) for (n, f)
-                            in self.fields.items() if n in identifiers])
-        locals_dict.update({'self': self})
-        return eval(expression, {}, locals_dict)
 
     def perform_qa(self):
         """
