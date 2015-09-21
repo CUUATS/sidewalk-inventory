@@ -32,9 +32,6 @@ DWS_TYPE_SCALE = DictScale({
 DWS_WIDTH_SCALE = BreaksScale(
     [0, 0.7, 0.8, 0.9, 1], [0, 20, 40, 60, 80, 100], True)
 
-DWS_LENGTH_SCALE = BreaksScale(
-    [0, 11, 23], [0, 33, 67, 100], True)
-
 GUTTER_RUNNING_SLOPE_SCALE = BreaksScale(
     [5, 7, 9, 11, 13], [100, 80, 60, 40, 20, 0], True)
 
@@ -392,8 +389,8 @@ class CurbRamp(InventoryFeature):
             ('not self.in_median', WIDTH_SCALE),
             ('self.in_median', IN_MEDIAN_WIDTH_SCALE),
         ),
-        value_field='RampWidth'
-    )
+        value_field='RampWidth')
+
     ScoreRampCrossSlope = ScaleField(
         'Ramp Cross Slope Score',
         condition='self.qa_complete and self.has_ramp',
@@ -409,27 +406,26 @@ class CurbRamp(InventoryFeature):
     ScoreDetectableWarningType = ScaleField(
         'DWS Type Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=DWS_TYPE_SCALE,
+        scale=(
+            ('self.has_gutter', DWS_TYPE_SCALE),
+            # Detectable warnings are only required on ramps adjacent
+            # to the street.
+            ('not self.has_gutter', StaticScale(100))
+        ),
         use_description=True,
         value_field='DetectableWarningType')
 
     ScoreDetectableWarningWidth = ScaleField(
         'DWS Width Score',
-        scale=(
-            ('not self.in_median', DWS_WIDTH_SCALE),
-            ('self.in_median', StaticScale(100)),
-        ),
         condition='self.qa_complete and self.has_ramp',
-        value_field='DetectableWarningWidth / RampWidth')
-
-    ScoreDetectableWarningLength = ScaleField(
-        'DWS Length Score',
         scale=(
-            ('not self.in_median', DWS_LENGTH_SCALE),
-            ('self.in_median', StaticScale(100)),
+            ('self.has_gutter', DWS_WIDTH_SCALE),
+            # Detectable warnings are only required on ramps adjacent
+            # to the street.
+            ('not self.has_gutter', StaticScale(100))
         ),
-        condition='self.qa_complete and self.has_ramp',
-        value_field='DetectableWarningLength')
+        value_field='DetectableWarningWidth/'
+                    '((self.is_parallel and LandingWidth) or RampWidth)')
 
     ScoreGutterCrossSlope = ScaleField(
         'Gutter Cross Slope Score',
@@ -461,6 +457,24 @@ class CurbRamp(InventoryFeature):
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LandingRunningSlope, LandingCrossSlope)')
 
+    ScoreApproachCrossSlope = ScaleField(
+        'Approach Cross Slope Score',
+        scale=(
+            ('self.approach_count > 0', CROSS_SLOPE_SCALE),
+            ('self.approach_count == 0', StaticScale(100))
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='max(LeftApproachCrossSlope, RightApproachCrossSlope)')
+
+    ScoreFlareSlope = ScaleField(
+        'Flare Slope Score',
+        scale=(
+            ('self.has_flares', FLARE_SLOPE_SCALE),
+            ('not self.has_flares', StaticScale(100)),
+        ),
+        condition='self.qa_complete and self.has_ramp',
+        value_field='FlareSlope')
+
     ScoreLargestPavementFault = ScaleField(
         'Largest Vertical Fault Score',
         scale=LARGEST_VFAULT_SCALE,
@@ -475,29 +489,70 @@ class CurbRamp(InventoryFeature):
         value_field='Obstruction',
         use_description=True)
 
-    ScoreFlareSlope = ScaleField(
-        'Flare Slope Score',
-        scale=(
-            ('self.has_flares', FLARE_SLOPE_SCALE),
-            ('not self.has_flares', StaticScale(100)),
-        ),
+    ScoreRampGeometry = WeightsField(
+        'Ramp Geometry Score',
         condition='self.qa_complete and self.has_ramp',
-        value_field='FlareSlope')
+        weights={
+            'ScoreRampWidth': 0.2,
+            'ScoreRampCrossSlope': 0.4,
+            'ScoreRampRunningSlope': 0.4,
+        })
+
+    ScoreDetectableWarning = WeightsField(
+        'Detectable Warning Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreDetectableWarningType': 0.667,
+            'ScoreDetectableWarningWidth': 0.333,
+        })
+
+    ScoreGutter = WeightsField(
+        'Gutter Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreGutterCrossSlope': 0.5,
+            'ScoreGutterRunningSlope': 0.5,
+        })
+
+    ScoreLanding = WeightsField(
+        'Landing Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreLandingDimensions': 0.5,
+            'ScoreLandingSlope': 0.5,
+        })
+
+    ScoreApproachFlare = WeightsField(
+        'Approaches and Flares Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreApproachCrossSlope': 0.5,
+            'ScoreFlareSlope': 0.5,
+        })
+
+    ScoreHazard = WeightsField(
+        'Hazard Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreLargestPavementFault': 0.5,
+            'ScoreObstruction': 0.5,
+        })
 
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete and self.has_ramp',
         weights={
-            'ScoreRampWidth': 0.1,
+            'ScoreRampWidth': 0.05,
             'ScoreRampCrossSlope': 0.1,
             'ScoreRampRunningSlope': 0.1,
             'ScoreDetectableWarningType': 0.1,
             'ScoreDetectableWarningWidth': 0.05,
-            'ScoreDetectableWarningLength': 0.05,
             'ScoreGutterCrossSlope': 0.05,
             'ScoreGutterRunningSlope': 0.05,
             'ScoreLandingDimensions': 0.1,
             'ScoreLandingSlope': 0.1,
+            'ScoreApproachCrossSlope': 0.05,
+            'ScoreFlareSlope': 0.05,
             'ScoreLargestPavementFault': 0.1,
             'ScoreObstruction': 0.1,
         })
@@ -531,8 +586,16 @@ class CurbRamp(InventoryFeature):
         return self.DetectableWarningType not in (D('None'), D('N/A'))
 
     @property
+    def has_gutter(self):
+        return self.GutterCrossSlope > 0 or self.GutterRunningSlope > 0
+
+    @property
     def in_median(self):
         return self.InMedian == D('Yes')
+
+    @property
+    def is_parallel(self):
+        return self.RampType == D('Parallel')
 
     @property
     def is_blended_transition(self):
@@ -613,11 +676,13 @@ class Crosswalk(InventoryFeature):
         condition='self.qa_complete',
         scale=BreaksScale([36, 42, 48], [0, 33, 67, 100], False),
         value_field='Width')
+
     ScoreCrossSlope = ScaleField(
         'Cross Slope Score',
         condition='self.qa_complete',
         scale=BreaksScale([5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True),
         value_field='CrossSlope')
+
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
@@ -674,22 +739,26 @@ class PedestrianSignal(InventoryFeature):
         }),
         value_field='PedButtonSize',
         use_description=True)
+
     ScoreButtonHeight = ScaleField(
         'Button Height Score',
         condition='self.qa_complete and self.has_button',
         scale=BreaksScale(
             [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True),
         value_field='ButtonHeight')
+
     ScoreButtonPositionAppearance = MethodField(
         'Button Position and Appearance Score',
         condition='self.qa_complete and self.has_button',
         method_name='_position_appearance_score',
         storage={'field_type': 'SHORT'})
+
     ScoreTactileFeatures = MethodField(
         'Tactile Features Score',
         condition='self.qa_complete',
         method_name='_tactile_features_score',
         storage={'field_type': 'SHORT'})
+
     ScoreCompliance = MethodField(
         'Compliance Score',
         condition='self.qa_complete',
