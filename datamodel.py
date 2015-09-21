@@ -61,6 +61,22 @@ OBSTRUCTION_SCALE = DictScale({
 FLARE_SLOPE_SCALE = BreaksScale(
     [10, 12, 14, 16, 18], [100, 80, 60, 40, 20, 0], True)
 
+SURFACE_CONDITION_SCALE = DictScale({
+    'Spalled': 20,
+    'Grass': 40,
+    'Dirt': 60,
+    'Cracked': 80,
+    'Other': 80,
+    'N/A': 100,
+    'None': 100,
+})
+
+VERTICAL_FAULT_FREQUENCY_SCALE = BreaksScale(
+    [50, 100, 150, 200], [100, 80, 60, 40, 20], False)
+
+CRACKED_PANEL_SCALE = BreaksScale(
+    [0.1, 0.2, 0.3, 0.4], [100, 80, 60, 40, 20], False)
+
 
 class SlopeField(NumericField):
     """
@@ -557,6 +573,34 @@ class CurbRamp(InventoryFeature):
             'ScoreObstruction': 0.1,
         })
 
+    ScoreSurfaceCondition = ScaleField(
+        'Surface Condition Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=SURFACE_CONDITION_SCALE,
+        use_description=True,
+        value_field='SurfaceCondition')
+
+    ScorePavementFaultCount = ScaleField(
+        'Vertical Fault Count Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=VERTICAL_FAULT_FREQUENCY_SCALE,
+        value_field='PavementFaultCount/self.condition_length')
+
+    ScoreCrackedPanelCount = ScaleField(
+        'Cracked Panel Count Score',
+        condition='self.qa_complete and self.has_ramp',
+        scale=CRACKED_PANEL_SCALE,
+        value_field='100*CrackedPanelCount/(self.condition_length*1056)')
+
+    ScoreCondition = WeightsField(
+        'Condition Score',
+        condition='self.qa_complete and self.has_ramp',
+        weights={
+            'ScoreSurfaceCondition': 0.334,
+            'ScorePavementFaultCount': 0.333,
+            'ScoreCrackedPanelCount': 0.333,
+        })
+
     @property
     def has_ramp(self):
         return self.RampType != D('None')
@@ -603,6 +647,19 @@ class CurbRamp(InventoryFeature):
         # ramp, while features with a running slope less than or equal to
         # 5.0% are scored as blended transitions.
         return self.RampRunningSlope <= 5
+
+    @property
+    def condition_length(self):
+        """
+        Returns the length, in miles, used for calculating condition scores.
+        """
+
+        length = self.RampLength
+        if self.RampType in (D('Perpendicular'), D('Combination')):
+            length += self.LandingLength
+        elif self.RampType == D('Parallel'):
+            length += self.LandingWidth
+        return length/5280
 
     def clean(self):
         if self.has_ramp:
