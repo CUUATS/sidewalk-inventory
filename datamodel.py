@@ -77,6 +77,9 @@ VERTICAL_FAULT_FREQUENCY_SCALE = BreaksScale(
 CRACKED_PANEL_SCALE = BreaksScale(
     [0.1, 0.2, 0.3, 0.4], [100, 80, 60, 40, 20], False)
 
+OBSTRUCTION_TYPES_SCALE = BreaksScale(
+    [0, 1], [100, 50, 0], True)
+
 
 class SlopeField(NumericField):
     """
@@ -101,6 +104,14 @@ class SidewalkSegment(BaseFeature):
     A block of sidewalk.
     """
 
+    VERTICAL_FAULT_WEIGHT = {
+        'N/A': 0,
+        'None': 0,
+        'All vertical discontinuities compliant': 1,
+        'Between 0.25 and 0.50 inch, no bevel': 2,
+        'Over 0.50 inch': 3,
+    }
+
     # Fields common to all of the sidewalk inventory features
     OBJECTID = OIDField('OBJECTID', order=-1)
     path_type = NumericField('Path Type')
@@ -120,20 +131,118 @@ class SidewalkSegment(BaseFeature):
     localissue_count = NumericField(
         'Local Issue Count')
 
+    summary_cross_slope = NumericField(
+        'Summary Cross Slope')
+
+    max_cross_slope = NumericField(
+        'Maximum Cross Slope')
+
+    largest_vertical_fault = NumericField(
+        'Largest Vertical Fault',
+        storage={'field_type': 'LONG'})
+
+    obstruction_types = StringField(
+        'Obstruction Types')
+
+    width = NumericField(
+        'Width')
+
     Shape = GeometryField('SHAPE', order=1)
+
+    # Score fields
+    score_summary_cross_slope = ScaleField(
+        'Summary Cross Slope Score',
+        condition='self.qa_complete',
+        scale=CROSS_SLOPE_SCALE,
+        value_field='summary_cross_slope')
+
+    score_max_cross_slope = ScaleField(
+        'Maximum Cross Slope Score',
+        condition='self.qa_complete',
+        scale=CROSS_SLOPE_SCALE,
+        value_field='max_cross_slope')
+
+    score_cross_slope = WeightsField(
+        'Cross Slope Score',
+        condition='self.qa_complete',
+        weights={
+            'score_summary_cross_slope': 0.5,
+            'score_max_cross_slope': 0.5,
+        })
+
+    score_largest_vertical_fault = ScaleField(
+        'Largest Vertical Fault Score',
+        condition='self.qa_complete',
+        scale=LARGEST_VFAULT_SCALE,
+        value_field='largest_vertical_fault',
+        use_description=True)
+
+    score_obstruction_types = ScaleField(
+        'Obstruction Types Score',
+        condition='self.qa_complete',
+        scale=OBSTRUCTION_TYPES_SCALE,
+        value_field='self.obstruction_types_count')
+
+    score_width = ScaleField(
+        'Width Score',
+        condition='self.qa_complete',
+        scale=WIDTH_SCALE,
+        value_field='width')
+
+    score_compliance = WeightsField(
+        'Compliance Score',
+        condition='self.qa_complete',
+        weights={
+            'score_cross_slope': 0.25,
+            'score_largest_vertical_fault': 0.25,
+            'score_obstruction_types': 0.25,
+            'score_width': 0.25,
+        })
+
+    @property
+    def obstruction_types_count(self):
+        if self.obstruction_types is None:
+            return 0
+        return len(self.obstruction_types.split('; '))
+
+    def qa_complete(self):
+        return self.summary_count > 0
 
     def update_sidewalk_fields(self):
         self.summary_count = 0
         self.driveway_count = 0
         self.localissue_count = 0
+        self.max_cross_slope = 0
+        self.largest_vertical_fault = D('None')
+        obstruction_types = []
 
         for sw in self.sidewalk_set:
+            if not sw.qa_complete:
+                continue
             if sw.is_summary:
                 self.summary_count += 1
+                self.width = sw.Width
+                self.summary_cross_slope = sw.CrossSlope
             elif sw.is_driveway:
                 self.driveway_count += 1
             elif sw.is_localissue:
                 self.localissue_count += 1
+
+            if sw.CrossSlope > self.max_cross_slope:
+                self.max_cross_slope = sw.CrossSlope
+
+            if sw.Obstruction not in (None, D('None'), D('N/A')):
+                if sw.Obstruction not in obstruction_types:
+                    obstruction_types.append(sw.Obstruction)
+
+            if sw.LargestVerticalFault and self.VERTICAL_FAULT_WEIGHT[
+                    sw.LargestVerticalFault.description] > \
+                    self.VERTICAL_FAULT_WEIGHT[
+                        self.largest_vertical_fault.description]:
+                self.largest_vertical_fault = sw.LargestVerticalFault
+
+        self.obstruction_types = '; '.join(
+            [ot.description for ot in obstruction_types]) or None
 
 
 class InventoryFeature(BaseFeature):
