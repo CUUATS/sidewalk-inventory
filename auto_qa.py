@@ -54,8 +54,8 @@ for feature_class in feature_classes:
 if not args.no_rels:
     # Update the nearest sidewalk segment relationship.
     print 'Updating nearest sidewalk segment...'
-    SidewalkSegment.workspace.set_nearest(
-        'SidewalkNearestSegment', 25, update=True)
+    SidewalkSegment.workspace.update_spatial_relationship(
+        'SidewalkNearestSegment', 'CLOSEST', 25)
 
     # Update segment fields based on the nearest segment relationship.
     print 'Updating sidewalk segment statistics...'
