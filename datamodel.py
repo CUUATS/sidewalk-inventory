@@ -104,144 +104,207 @@ class SidewalkSegment(BaseFeature):
     A block of sidewalk.
     """
 
-    VERTICAL_FAULT_WEIGHT = {
-        'N/A': 0,
-        'None': 0,
-        'All vertical discontinuities compliant': 1,
-        'Between 0.25 and 0.50 inch, no bevel': 2,
-        'Over 0.50 inch': 3,
-    }
+    SUMMARY_FIELDS_EXCLUDE = [
+        'OBJECTID',
+        'GlobalID',
+        'StaticID',
+        'QAStatus',
+        'QAComment',
+        'SHAPE',
+        'Obstruction',
+        'NearestSegmentOID',
+    ]
 
     # Fields common to all of the sidewalk inventory features
-    OBJECTID = OIDField('OBJECTID', order=-1)
-    path_type = NumericField('Path Type')
-    owner = StringField('Owner')
-    municipality = StringField('Municipality')
-    data_source = StringField('Data Source')
-    crossing_type = StringField('Crossing Type')
-    bike_facility = StringField('Bicycle Facility')
-    safe_route = StringField('Safe Route to School')
+    OBJECTID = OIDField(
+        'OBJECTID')
 
-    summary_count = NumericField(
-        'Summary Count')
+    PathType = NumericField(
+        'Path Type',
+        db_name='path_type')
 
-    driveway_count = NumericField(
-        'Driveway Count')
+    Municipality = StringField(
+        'Municipality',
+        db_name='municipality')
 
-    localissue_count = NumericField(
-        'Local Issue Count')
+    SummaryCount = NumericField(
+        'Summary Count',
+        storage={'field_type': 'SHORT'})
 
-    summary_cross_slope = NumericField(
-        'Summary Cross Slope')
+    DrivewayCount = NumericField(
+        'Driveway Count',
+        storage={'field_type': 'SHORT'})
 
-    max_cross_slope = NumericField(
-        'Maximum Cross Slope')
+    LocalIssueCount = NumericField(
+        'Local Issue Count',
+        storage={'field_type': 'SHORT'})
 
-    largest_vertical_fault = NumericField(
+    Material = NumericField(
+        'Material',
+        storage={'field_type': 'LONG', 'field_domain': 'MaterialType'})
+
+    Width = NumericField(
+        'Width',
+        storage={'field_type': 'DOUBLE'})
+
+    CrossSlope = NumericField(
+        'Summary Cross Slope',
+        storage={'field_type': 'DOUBLE'})
+
+    MaxCrossSlope = NumericField(
+        'Maximum Cross Slope',
+        storage={'field_type': 'DOUBLE'})
+
+    SurfaceCondition = NumericField(
+        'Surface Condition',
+        storage={'field_type': 'LONG', 'field_domain': 'SurfaceCondition'})
+
+    VerticalFaultCount = NumericField(
+        'Vertical Faults',
+        storage={'field_type': 'SHORT'})
+
+    LargestVerticalFault = NumericField(
         'Largest Vertical Fault',
-        storage={'field_type': 'LONG'})
+        storage={'field_type': 'LONG', 'field_domain': 'FaultSize'})
 
-    obstruction_types = StringField(
+    CrackedPanelCount = NumericField(
+        'Cracked Panels',
+        storage={'field_type': 'SHORT'})
+
+    ObstructionTypes = StringField(
         'Obstruction Types')
 
-    width = NumericField(
-        'Width')
+    Grade = SlopeField(
+        'Grade')
 
-    Shape = GeometryField('SHAPE', order=1)
+    Comment = StringField(
+        'Comment',
+        storage={'field_length': 200})
 
     # Score fields
-    score_summary_cross_slope = ScaleField(
+    ScoreSummaryCrossSlope = ScaleField(
         'Summary Cross Slope Score',
         condition='self.qa_complete',
         scale=CROSS_SLOPE_SCALE,
-        value_field='summary_cross_slope')
+        value_field='CrossSlope')
 
-    score_max_cross_slope = ScaleField(
+    ScoreMaxCrossSlope = ScaleField(
         'Maximum Cross Slope Score',
         condition='self.qa_complete',
         scale=CROSS_SLOPE_SCALE,
-        value_field='max_cross_slope')
+        value_field='MaxCrossSlope')
 
-    score_cross_slope = WeightsField(
+    ScoreCrossSlope = WeightsField(
         'Cross Slope Score',
         condition='self.qa_complete',
         weights={
-            'score_summary_cross_slope': 0.5,
-            'score_max_cross_slope': 0.5,
+            'ScoreSummaryCrossSlope': 0.5,
+            'ScoreMaxCrossSlope': 0.5,
         })
 
-    score_largest_vertical_fault = ScaleField(
+    ScoreLargestVerticalFault = ScaleField(
         'Largest Vertical Fault Score',
         condition='self.qa_complete',
         scale=LARGEST_VFAULT_SCALE,
-        value_field='largest_vertical_fault',
+        value_field='LargestVerticalFault',
         use_description=True)
 
-    score_obstruction_types = ScaleField(
+    ScoreObstructionTypes = ScaleField(
         'Obstruction Types Score',
         condition='self.qa_complete',
         scale=OBSTRUCTION_TYPES_SCALE,
         value_field='self.obstruction_types_count')
 
-    score_width = ScaleField(
+    ScoreWidth = ScaleField(
         'Width Score',
         condition='self.qa_complete',
         scale=WIDTH_SCALE,
-        value_field='width')
+        value_field='Width')
 
-    score_compliance = WeightsField(
+    ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
         weights={
-            'score_cross_slope': 0.25,
-            'score_largest_vertical_fault': 0.25,
-            'score_obstruction_types': 0.25,
-            'score_width': 0.25,
+            'ScoreCrossSlope': 0.25,
+            'ScoreLargestVerticalFault': 0.25,
+            'ScoreObstructionTypes': 0.25,
+            'ScoreWidth': 0.25,
         })
+
+    ScoreSurfaceCondition = ScaleField(
+        'Surface Condition Score',
+        condition='self.qa_complete',
+        scale=SURFACE_CONDITION_SCALE,
+        use_description=True,
+        value_field='SurfaceCondition')
+
+    ScoreVerticalFaultCount = ScaleField(
+        'Vertical Fault Count Score',
+        condition='self.qa_complete',
+        scale=VERTICAL_FAULT_FREQUENCY_SCALE,
+        value_field='VerticalFaultCount/self.condition_length')
+
+    ScoreCrackedPanelCount = ScaleField(
+        'Cracked Panel Count Score',
+        condition='self.qa_complete',
+        scale=CRACKED_PANEL_SCALE,
+        value_field='CrackedPanelCount/(self.condition_length*1056)')
+
+    ScoreCondition = WeightsField(
+        'Condition Score',
+        condition='self.qa_complete',
+        weights={
+            'ScoreSurfaceCondition': 0.334,
+            'ScoreVerticalFaultCount': 0.333,
+            'ScoreCrackedPanelCount': 0.333,
+        })
+
+    Shape = GeometryField(
+        'Shape')
 
     @property
     def obstruction_types_count(self):
-        if self.obstruction_types is None:
+        if self.ObstructionTypes is None:
             return 0
-        return len(self.obstruction_types.split('; '))
+        return len(self.ObstructionTypes.split('; '))
 
+    @property
+    def condition_length(self):
+        return self.Shape.length / 5280
+
+    @property
     def qa_complete(self):
-        return self.summary_count > 0
+        return self.SummaryCount > 0
 
     def update_sidewalk_fields(self):
-        self.summary_count = 0
-        self.driveway_count = 0
-        self.localissue_count = 0
-        self.max_cross_slope = 0
-        self.largest_vertical_fault = D('None')
+        self.SummaryCount = 0
+        self.DrivewayCount = 0
+        self.LocalIssueCount = 0
+        self.MaxCrossSlope = 0
         obstruction_types = []
 
         for sw in self.sidewalk_set:
             if not sw.qa_complete:
                 continue
             if sw.is_summary:
-                self.summary_count += 1
-                self.width = sw.Width
-                self.summary_cross_slope = sw.CrossSlope
+                self.SummaryCount += 1
+                for field_name in sw.fields.keys():
+                    if field_name not in self.SUMMARY_FIELDS_EXCLUDE and \
+                            hasattr(self, field_name):
+                        setattr(self, field_name, getattr(sw, field_name))
             elif sw.is_driveway:
-                self.driveway_count += 1
+                self.DrivewayCount += 1
             elif sw.is_localissue:
-                self.localissue_count += 1
+                self.LocalIssueCount += 1
 
-            if sw.CrossSlope > self.max_cross_slope:
-                self.max_cross_slope = sw.CrossSlope
+            if sw.CrossSlope > self.MaxCrossSlope:
+                self.MaxCrossSlope = sw.CrossSlope
 
             if sw.Obstruction not in (None, D('None'), D('N/A')):
                 if sw.Obstruction not in obstruction_types:
                     obstruction_types.append(sw.Obstruction)
 
-            if sw.LargestVerticalFault and self.VERTICAL_FAULT_WEIGHT[
-                    sw.LargestVerticalFault.description] > \
-                    self.VERTICAL_FAULT_WEIGHT[
-                        self.largest_vertical_fault.description]:
-                self.largest_vertical_fault = sw.LargestVerticalFault
-
-        self.obstruction_types = '; '.join(
+        self.ObstructionTypes = '; '.join(
             [ot.description for ot in obstruction_types]) or None
 
 
@@ -699,7 +762,7 @@ class CurbRamp(InventoryFeature):
         'Cracked Panel Count Score',
         condition='self.qa_complete and self.has_ramp',
         scale=CRACKED_PANEL_SCALE,
-        value_field='100*CrackedPanelCount/(self.condition_length*1056)')
+        value_field='CrackedPanelCount/(self.condition_length*1056)')
 
     ScoreCondition = WeightsField(
         'Condition Score',
