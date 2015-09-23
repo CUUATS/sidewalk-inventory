@@ -99,6 +99,83 @@ class SlopeField(NumericField):
         return messages
 
 
+class TrafficAnalysisZone(BaseFeature):
+    """
+    A traffic analysis zone.
+    """
+
+    OBJECTID = OIDField(
+        'OBJECTID')
+
+    Shape = GeometryField(
+        'Shape')
+
+    ID = NumericField(
+        'TAZ ID',
+        db_name='id')
+
+    TAZType = StringField(
+        'TAZ Type',
+        db_name='taztype')
+
+    Vintage = NumericField(
+        'Vintage')
+
+
+class SidewalkTAZSummary(BaseFeature):
+    """
+    Summary of sidewalk network analysis by TAZ.
+    """
+
+    OBJECTID = OIDField(
+        'OBJECTID')
+
+    TAZ = ForeignKey(
+        'TAZ',
+        origin_class=TrafficAnalysisZone,
+        db_name='TAZOID')
+
+    SidewalkCount = NumericField(
+        'Sidewalk Count',
+        storage={'field_type': 'LONG'})
+
+    CurbRampCount = NumericField(
+        'Curb Ramp Count',
+        storage={'field_type': 'LONG'})
+
+    CrosswalkCount = NumericField(
+        'Crosswalk Count',
+        storage={'field_type': 'LONG'})
+
+    PedestrianSignalCount = NumericField(
+        'Pedestrian Signal Count',
+        storage={'field_type': 'LONG'})
+
+    AvgSidewalkCompliance = NumericField(
+        'Average Sidewalk Compliance',
+        storage={'field_type': 'DOUBLE'})
+
+    AvgCurbRampCompliance = NumericField(
+        'Average Curb Ramp Compliance',
+        storage={'field_type': 'DOUBLE'})
+
+    AvgCrosswalkCompliance = NumericField(
+        'Average Crosswalk Compliance',
+        storage={'field_type': 'DOUBLE'})
+
+    AvgPedestrianSignalCompliance = NumericField(
+        'Average Pedestrian Signal Compliance',
+        storage={'field_type': 'DOUBLE'})
+
+    AvgSidewalkCondition = NumericField(
+        'Average Sidewalk Condition',
+        storage={'field_type': 'DOUBLE'})
+
+    AvgCurbRampCondition = NumericField(
+        'Average Curb Ramp Condition',
+        storage={'field_type': 'DOUBLE'})
+
+
 class SidewalkSegment(BaseFeature):
     """
     A block of sidewalk.
