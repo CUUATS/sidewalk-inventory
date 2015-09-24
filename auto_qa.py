@@ -7,6 +7,7 @@ from cuuats.datamodel import D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
 from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
+from utils import display_progress
 
 PREFETCH_RELS = {
     'CurbRamp': ['attachments'],
@@ -25,15 +26,17 @@ Crosswalk.register(CW_PATH)
 PedestrianSignal.register(PS_PATH)
 SidewalkSegment.register(SS_PATH)
 
-feature_classes = [
-    Sidewalk,
-    CurbRamp,
-    Crosswalk,
-    PedestrianSignal
-]
+feature_classes = {
+    'Sidewalks': Sidewalk,
+    'Curb Ramps': CurbRamp,
+    'Crosswalks': Crosswalk,
+    'Pedestrian Signals': PedestrianSignal,
+}
+
+results = []
 
 print 'Performing auto QA...'
-for feature_class in feature_classes:
+for label, feature_class in feature_classes.items():
     update_count = 0
 
     # Don't update deferred features or those requiring staff review.
@@ -44,12 +47,12 @@ for feature_class in feature_classes:
         rels = PREFETCH_RELS[feature_class.__name__]
         features = features.prefetch_related(*rels)
 
-    for feature in features:
+    for feature in display_progress(features, label):
         feature.perform_qa()
         feature.assign_staticid()
         update_count += int(feature.save())
 
-    print '%s: Updated %i rows' % (feature_class.name, update_count)
+    results.append('%s: Updated %i rows' % (label, update_count))
 
 if not args.no_rels:
     # Update the nearest sidewalk segment relationship.
@@ -60,7 +63,12 @@ if not args.no_rels:
     # Update segment fields based on the nearest segment relationship.
     print 'Updating sidewalk segment statistics...'
     update_count = 0
-    for segment in SidewalkSegment.objects.prefetch_related('sidewalk_set'):
+    segments = SidewalkSegment.objects.prefetch_related('sidewalk_set')
+    for segment in display_progress(segments, 'Sidewalk Segments'):
         segment.update_sidewalk_fields()
         update_count += int(segment.save())
-    print '%s: Updated %i rows' % (SidewalkSegment.name, update_count)
+    results.append('%s: Updated %i rows' % ('Sidewalk Segments', update_count))
+
+# Print results.
+for row in results:
+    print row
