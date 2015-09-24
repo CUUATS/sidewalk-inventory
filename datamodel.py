@@ -121,6 +121,10 @@ class TrafficAnalysisZone(BaseFeature):
     Vintage = NumericField(
         'Vintage')
 
+    @property
+    def summary(self):
+        return SidewalkTAZSummary.objects.get_or_create(TAZ=self.OBJECTID)
+
 
 class SidewalkTAZSummary(BaseFeature):
     """
@@ -174,6 +178,47 @@ class SidewalkTAZSummary(BaseFeature):
     AvgCurbRampCondition = NumericField(
         'Average Curb Ramp Condition',
         storage={'field_type': 'DOUBLE'})
+
+    AvgCombinedCondition = WeightsField(
+        'Average Combined Condition',
+        condition='AvgSidewalkCondition is not None and '
+                  'AvgCurbRampCondition is not None',
+        weights={
+            'AvgSidewalkCondition': 0.5,
+            'AvgCurbRampCondition': 0.5,
+        },
+        storage={'field_type': 'DOUBLE'})
+
+    def _mean(self, features, field_name):
+        values = [getattr(f, field_name) for f in features]
+        filtered = [v for v in values if v is not None]
+        if len(values) == 0:
+            return None
+        return float(sum(filtered))/len(filtered)
+
+    def update_sidewalk_segments(self, taz):
+        segments = [ss for ss in taz.sidewalksegment_set if ss.qa_complete]
+        self.SidewalkCount = len(segments)
+        self.AvgSidewalkCompliance = self._mean(segments, 'ScoreCompliance')
+        self.AvgSidewalkCondition = self._mean(segments, 'ScoreCondition')
+
+    def update_curb_ramps(self, taz):
+        ramps = [cr for cr in taz.curbramp_set
+                 if cr.has_ramp and cr.qa_complete]
+        self.CurbRampCount = len(ramps)
+        self.AvgCurbRampCompliance = self._mean(ramps, 'ScoreCompliance')
+        self.AvgCurbRampCondition = self._mean(ramps, 'ScoreCondition')
+
+    def update_crosswalks(self, taz):
+        crosswalks = [cw for cw in taz.crosswalk_set if cw.qa_complete]
+        self.CrosswalkCount = len(crosswalks)
+        self.AvgCrosswalkCompliance = self._mean(crosswalks, 'ScoreCompliance')
+
+    def update_pedestrian_signals(self, taz):
+        ped_signals = [ps for ps in taz.pedestriansignal_set if ps.qa_complete]
+        self.PedestrianSignalCount = len(ped_signals)
+        self.AvgPedestrianSignalCompliance = self._mean(
+            ped_signals, 'ScoreCompliance')
 
 
 class SidewalkSegment(BaseFeature):
@@ -337,7 +382,13 @@ class SidewalkSegment(BaseFeature):
         })
 
     Shape = GeometryField(
-        'Shape')
+        'Shape',
+        deferred=False)
+
+    TAZ = ForeignKey(
+        'TAZ',
+        origin_class=TrafficAnalysisZone,
+        db_name='TAZOID')
 
     @property
     def obstruction_types_count(self):
@@ -353,6 +404,12 @@ class SidewalkSegment(BaseFeature):
     def qa_complete(self):
         return self.SummaryCount > 0
 
+    def _copy_sidewalk_summary_values(self, sidewalk):
+        for field_name in sidewalk.fields.keys():
+            if field_name not in self.SUMMARY_FIELDS_EXCLUDE and \
+                    hasattr(self, field_name):
+                setattr(self, field_name, getattr(sidewalk, field_name))
+
     def update_sidewalk_fields(self):
         self.SummaryCount = 0
         self.DrivewayCount = 0
@@ -365,10 +422,7 @@ class SidewalkSegment(BaseFeature):
                 continue
             if sw.is_summary:
                 self.SummaryCount += 1
-                for field_name in sw.fields.keys():
-                    if field_name not in self.SUMMARY_FIELDS_EXCLUDE and \
-                            hasattr(self, field_name):
-                        setattr(self, field_name, getattr(sw, field_name))
+                self._copy_sidewalk_summary_values(sw)
             elif sw.is_driveway:
                 self.DrivewayCount += 1
             elif sw.is_localissue:
@@ -850,6 +904,11 @@ class CurbRamp(InventoryFeature):
             'ScoreCrackedPanelCount': 0.333,
         })
 
+    TAZ = ForeignKey(
+        'TAZ',
+        origin_class=TrafficAnalysisZone,
+        db_name='TAZOID')
+
     @property
     def has_ramp(self):
         return self.RampType != D('None')
@@ -997,6 +1056,11 @@ class Crosswalk(InventoryFeature):
             'ScoreCrossSlope': 0.5,
         })
 
+    TAZ = ForeignKey(
+        'TAZ',
+        origin_class=TrafficAnalysisZone,
+        db_name='TAZOID')
+
     def clean(self):
         no_width = (D('No Painted Markings'), D('Box for Exclusive Period'))
         if self.MarkingType in no_width and self.Width is None:
@@ -1070,18 +1134,22 @@ class PedestrianSignal(InventoryFeature):
         condition='self.qa_complete',
         method_name='_compliance_score')
 
+    TAZ = ForeignKey(
+        'TAZ',
+        origin_class=TrafficAnalysisZone,
+        db_name='TAZOID')
+
     def _position_appearance_score(self, field_name):
-        yes = self.source.get_coded_value('YesOrNo', 'Yes')
         score = 0
-        if self.ButtonCount == 1 or self.ButtonSpacing == yes:
+        if self.ButtonCount == 1 or self.ButtonSpacing == D('Yes'):
             score += 15
-        if self.ButtonOffsetFCurb == yes:
+        if self.ButtonOffsetFCurb == D('Yes'):
             score += 15
-        if self.AllWeatherSurface == yes:
+        if self.AllWeatherSurface == D('Yes'):
             score += 15
-        if self.HighContrastButton == yes:
+        if self.HighContrastButton == D('Yes'):
             score += 25
-        if self.LocatorTone == yes:
+        if self.LocatorTone == D('Yes'):
             score += 30
         return score
 
