@@ -8,6 +8,8 @@ CR_PATH = r''  # Curb ramps
 CW_PATH = r''  # Crosswalks
 PS_PATH = r''  # Pedestrian signals
 SS_PATH = r''  # Sidewalk segments
+TAZ_PATH = r''  # Traffic analysis zones
+STAZS_PATH = r''  # TAZ summary table
 
 # Paths to CSV files for tracking progress.
 SEGMENT_CSV = r''
