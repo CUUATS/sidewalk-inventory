@@ -81,6 +81,15 @@ CRACKED_PANEL_SCALE = BreaksScale(
 OBSTRUCTION_TYPES_SCALE = BreaksScale(
     [0, 1], [100, 50, 0], True)
 
+SCORE_BUTTON_HEIGHT = BreaksScale(
+    [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True)
+
+SCORE_BUTTON_SIZE = DictScale({
+    'Very Small - < 1/2 inch': 33,
+    'Medium - roughly 1 inch': 67,
+    'Accessible - 2 inches or greater': 100,
+})
+
 
 class SlopeField(NumericField):
     """
@@ -1329,32 +1338,25 @@ class PedestrianSignal(InventoryFeature):
     ScoreButtonSize = ScaleField(
         'Button Size Score',
         condition='self.qa_complete and self.has_button',
-        scale=DictScale({
-            'Very small': 33,
-            'Medium': 67,
-            'Accessible': 100,
-        }),
+        scale=SCORE_BUTTON_SIZE,
         value_field='PedButtonSize',
         use_description=True)
 
     ScoreButtonHeight = ScaleField(
         'Button Height Score',
         condition='self.qa_complete and self.has_button',
-        scale=BreaksScale(
-            [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True),
+        scale=SCORE_BUTTON_HEIGHT,
         value_field='ButtonHeight')
 
     ScoreButtonPositionAppearance = MethodField(
         'Button Position and Appearance Score',
         condition='self.qa_complete and self.has_button',
-        method_name='_position_appearance_score',
-        storage={'field_type': 'SHORT'})
+        method_name='_position_appearance_score')
 
     ScoreTactileFeatures = MethodField(
         'Tactile Features Score',
         condition='self.qa_complete',
-        method_name='_tactile_features_score',
-        storage={'field_type': 'SHORT'})
+        method_name='_tactile_features_score')
 
     ScoreCompliance = MethodField(
         'Compliance Score',
