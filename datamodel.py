@@ -90,6 +90,9 @@ SCORE_BUTTON_SIZE = DictScale({
     'Accessible - 2 inches or greater': 100,
 })
 
+CROSSWALK_STOP_CROSS_SLOPE_SCALE = BreaksScale(
+    [5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True)
+
 
 class SlopeField(NumericField):
     """
@@ -1275,13 +1278,13 @@ class Crosswalk(InventoryFeature):
     ScoreWidth = ScaleField(
         'Width Score',
         condition='self.qa_complete',
-        scale=BreaksScale([36, 42, 48], [0, 33, 67, 100], False),
+        scale=WIDTH_SCALE,
         value_field='Width')
 
     ScoreCrossSlope = ScaleField(
         'Cross Slope Score',
         condition='self.qa_complete',
-        scale=BreaksScale([5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True),
+        scale=CROSSWALK_STOP_CROSS_SLOPE_SCALE,
         value_field='CrossSlope')
 
     ScoreCompliance = WeightsField(
