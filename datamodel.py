@@ -524,7 +524,8 @@ class SidewalkSegment(BaseFeature):
         'Obstruction Types')
 
     Grade = SlopeField(
-        'Grade')
+        'Grade',
+        storage={'field_type': 'DOUBLE'})
 
     Comment = StringField(
         'Comment',
