@@ -53,9 +53,4 @@ tazs = TrafficAnalysisZone.objects.filter(
         'sidewalksegment_set', 'curbramp_set', 'crosswalk_set',
         'pedestriansignal_set')
 for taz in display_progress(tazs, 'TAZs'):
-    summary = taz.summary
-    summary.update_sidewalk_segments(taz)
-    summary.update_curb_ramps(taz)
-    summary.update_crosswalks(taz)
-    summary.update_pedestrian_signals(taz)
-    summary.save()
+    taz.summary.save()
