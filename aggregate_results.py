@@ -109,7 +109,8 @@ for (fc_name, fc_label, fc_path) in FEATURE_CLASSES:
     print 'Joining %s' % (fc_label,)
     arcpy.SpatialJoin_analysis(
         target_path, memory_path(ftl_name), memory_path(join_name),
-        field_mapping=field_mappings)
+        field_mapping=field_mappings,
+        match_option='CONTAINS' if is_linear else 'INTERSECT')
 
     # Rename the count field.
     arcpy.AlterField_management(
