@@ -8,8 +8,12 @@ CR_PATH = r''  # Curb ramps
 CW_PATH = r''  # Crosswalks
 PS_PATH = r''  # Pedestrian signals
 SS_PATH = r''  # Sidewalk segments
-TAZ_PATH = r''  # Traffic analysis zones
-STAZS_PATH = r''  # TAZ summary table
+
+# Paths to analysis zones and results.
+# Note: The results feature will be overwritten by the results
+# aggregation script.
+ZONE_PATH = r''
+RESULT_PATH = r''
 
 # Paths to CSV files for tracking progress.
 SEGMENT_CSV = r''

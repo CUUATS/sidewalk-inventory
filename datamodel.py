@@ -4,8 +4,7 @@ Sidewalk Inventory and Assessment data model.
 
 from cuuats.datamodel import D, BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, ForeignKey, ScaleField, \
-    WeightsField, MethodField, BreaksScale, DictScale, StaticScale, \
-    CalculatedField
+    WeightsField, MethodField, BreaksScale, DictScale, StaticScale
 
 # Scales
 WIDTH_SCALE = BreaksScale(
@@ -110,342 +109,6 @@ class SlopeField(NumericField):
             # so hundredths or smaller places indicate a problem.
             messages.append('%s has invalid decimals' % (self.label,))
         return messages
-
-
-class TAZAverageField(CalculatedField):
-    """
-    Field for aggregating scores at the TAZ level.
-    """
-
-    default_storage = {
-        'field_type': 'DOUBLE',
-    }
-
-    def __init__(self, name, **kwargs):
-        super(TAZAverageField, self).__init__(name, **kwargs)
-        self.rel_name = kwargs['relationship']
-        self.value_field = kwargs['value_field']
-
-    def _mean(self, features):
-        # We extract the values directly from the values dictionary instead of
-        # using normal attribure access. This assumes that all of the
-        # calculated fields are up to date and avoids the overhead of
-        # recalculating all of them.
-        values = [f.values.get(self.value_field) for f in features]
-        filtered = [v for v in values if v is not None]
-        if len(filtered) == 0:
-            return None
-        return float(sum(filtered))/len(filtered)
-
-    def calculate(self, instance):
-        """
-        Calculate the value for this field based on the state of the instance.
-        """
-
-        return self._mean([f for f in getattr(instance.TAZ, self.rel_name)
-                           if f.aggregate_scores])
-
-
-class TAZCountField(CalculatedField):
-    """
-    Field for counting the number of features within the TAZ.
-    """
-
-    default_storage = {
-        'field_type': 'LONG',
-    }
-
-    def __init__(self, name, **kwargs):
-        super(TAZCountField, self).__init__(name, **kwargs)
-        self.rel_name = kwargs['relationship']
-
-    def calculate(self, instance):
-        """
-        Calculate the value for this field based on the state of the instance.
-        """
-
-        return len([f for f in getattr(instance.TAZ, self.rel_name)
-                   if f.aggregate_scores])
-
-
-class TrafficAnalysisZone(BaseFeature):
-    """
-    A traffic analysis zone.
-    """
-
-    OBJECTID = OIDField(
-        'OBJECTID')
-
-    Shape = GeometryField(
-        'Shape')
-
-    ID = NumericField(
-        'TAZ ID',
-        db_name='id')
-
-    TAZType = StringField(
-        'TAZ Type',
-        db_name='taztype')
-
-    Vintage = NumericField(
-        'Vintage')
-
-    @property
-    def summary(self):
-        summary = SidewalkTAZSummary.objects.get_or_create(TAZ=self.OBJECTID)
-        # Cache the TAZ to improve scoring performance.
-        summary._prefetch_cache['TAZ'] = self
-        return summary
-
-
-class SidewalkTAZSummary(BaseFeature):
-    """
-    Summary of sidewalk network analysis by TAZ.
-    """
-
-    OBJECTID = OIDField(
-        'OBJECTID')
-
-    TAZ = ForeignKey(
-        'TAZ',
-        origin_class=TrafficAnalysisZone,
-        db_name='TAZOID')
-
-    # Sidewalk fields.
-    SidewalkCount = TAZCountField(
-        'Sidewalk Count',
-        relationship='sidewalksegment_set')
-
-    SidewalkScoreCrossSlope = TAZAverageField(
-        'Sidewalk Cross Slope Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreCrossSlope')
-
-    SidewalkScoreLargestVerticalFault = TAZAverageField(
-        'Sidewalk Largest Vertical Fault Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreLargestVerticalFault')
-
-    SidewalkScoreObstructionTypes = TAZAverageField(
-        'Sidewalk Obstruction Types Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreObstructionTypes')
-
-    SidewalkScoreWidth = TAZAverageField(
-        'Sidewalk Width Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreWidth')
-
-    SidewalkScoreCompliance = TAZAverageField(
-        'Sidewalk Compliance Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreCompliance')
-
-    SidewalkScoreSurfaceCondition = TAZAverageField(
-        'Sidewalk Surface Condition Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreSurfaceCondition')
-
-    SidewalkScoreVerticalFaultCount = TAZAverageField(
-        'Sidewalk Vertical Fault Count Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreVerticalFaultCount')
-
-    SidewalkScoreCrackedPanelCount = TAZAverageField(
-        'Sidewalk Cracked Panel Count Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreCrackedPanelCount')
-
-    SidewalkScoreCondition = TAZAverageField(
-        'Sidewalk Condition Score',
-        relationship='sidewalksegment_set',
-        value_field='ScoreCondition')
-
-    # Curb ramp fields.
-    CurbRampCount = TAZCountField(
-        'Curb Ramp Count',
-        relationship='curbramp_set')
-
-    CurbRampScoreRampWidth = TAZAverageField(
-        'Curb Ramp Ramp Width Score',
-        relationship='curbramp_set',
-        value_field='ScoreRampWidth')
-
-    CurbRampScoreRampCrossSlope = TAZAverageField(
-        'Curb Ramp Ramp Cross Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreRampCrossSlope')
-
-    CurbRampScoreRampRunningSlope = TAZAverageField(
-        'Curb Ramp Ramp Running Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreRampRunningSlope')
-
-    CurbRampScoreDetectableWarningType = TAZAverageField(
-        'Curb Ramp DWS Type Score',
-        relationship='curbramp_set',
-        value_field='ScoreDetectableWarningType')
-
-    CurbRampScoreDetectableWarningWidth = TAZAverageField(
-        'Curb Ramp DWS Width Score',
-        relationship='curbramp_set',
-        value_field='ScoreDetectableWarningWidth')
-
-    CurbRampScoreGutterCrossSlope = TAZAverageField(
-        'Curb Ramp Gutter Cross Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreGutterCrossSlope')
-
-    CurbRampScoreGutterRunningSlope = TAZAverageField(
-        'Curb Ramp Gutter Running Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreGutterRunningSlope')
-
-    CurbRampScoreLandingDimensions = TAZAverageField(
-        'Curb Ramp Landing Dimensions Score',
-        relationship='curbramp_set',
-        value_field='ScoreLandingDimensions')
-
-    CurbRampScoreLandingSlope = TAZAverageField(
-        'Curb Ramp Landing Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreLandingSlope')
-
-    CurbRampScoreApproachCrossSlope = TAZAverageField(
-        'Curb Ramp Approach Cross Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreApproachCrossSlope')
-
-    CurbRampScoreFlareSlope = TAZAverageField(
-        'Curb Ramp Flare Slope Score',
-        relationship='curbramp_set',
-        value_field='ScoreFlareSlope')
-
-    CurbRampScoreLargestPavementFault = TAZAverageField(
-        'Curb Ramp Largest Vertical Fault Score',
-        relationship='curbramp_set',
-        value_field='ScoreLargestPavementFault')
-
-    CurbRampScoreObstruction = TAZAverageField(
-        'Curb Ramp Obstruction Score',
-        relationship='curbramp_set',
-        value_field='ScoreObstruction')
-
-    CurbRampScoreRampGeometry = TAZAverageField(
-        'Curb Ramp Ramp Geometry Score',
-        relationship='curbramp_set',
-        value_field='ScoreRampGeometry')
-
-    CurbRampScoreDetectableWarning = TAZAverageField(
-        'Curb Ramp Detectable Warning Score',
-        relationship='curbramp_set',
-        value_field='ScoreDetectableWarning')
-
-    CurbRampScoreGutter = TAZAverageField(
-        'Curb Ramp Gutter Score',
-        relationship='curbramp_set',
-        value_field='ScoreGutter')
-
-    CurbRampScoreLanding = TAZAverageField(
-        'Curb Ramp Landing Score',
-        relationship='curbramp_set',
-        value_field='ScoreLanding')
-
-    CurbRampScoreApproachFlare = TAZAverageField(
-        'Curb Ramp Approaches and Flares Score',
-        relationship='curbramp_set',
-        value_field='ScoreApproachFlare')
-
-    CurbRampScoreHazard = TAZAverageField(
-        'Curb Ramp Hazard Score',
-        relationship='curbramp_set',
-        value_field='ScoreHazard')
-
-    CurbRampScoreCompliance = TAZAverageField(
-        'Curb Ramp Compliance Score',
-        relationship='curbramp_set',
-        value_field='ScoreCompliance')
-
-    CurbRampScoreSurfaceCondition = TAZAverageField(
-        'Curb Ramp Surface Condition Score',
-        relationship='curbramp_set',
-        value_field='ScoreSurfaceCondition')
-
-    CurbRampScorePavementFaultCount = TAZAverageField(
-        'Curb Ramp Vertical Fault Count Score',
-        relationship='curbramp_set',
-        value_field='ScorePavementFaultCount')
-
-    CurbRampScoreCrackedPanelCount = TAZAverageField(
-        'Curb Ramp Cracked Panel Count Score',
-        relationship='curbramp_set',
-        value_field='ScoreCrackedPanelCount')
-
-    CurbRampScoreCondition = TAZAverageField(
-        'Curb Ramp Condition Score',
-        relationship='curbramp_set',
-        value_field='ScoreCondition')
-
-    # Crosswalk fields.
-    CrosswalkCount = TAZCountField(
-        'Crosswalk Count',
-        relationship='crosswalk_set')
-
-    CrosswalkScoreWidth = TAZAverageField(
-        'Crosswalk Width Score',
-        relationship='crosswalk_set',
-        value_field='ScoreWidth')
-
-    CrosswalkScoreCrossSlope = TAZAverageField(
-        'Crosswalk Cross Slope Score',
-        relationship='crosswalk_set',
-        value_field='ScoreCrossSlope')
-
-    CrosswalkScoreCompliance = TAZAverageField(
-        'Crosswalk Compliance Score',
-        relationship='crosswalk_set',
-        value_field='ScoreCompliance')
-
-    # Pedestrian signal fields.
-    PedestrianSignalCount = TAZCountField(
-        'Pedestrian Signal Count',
-        relationship='pedestriansignal_set')
-
-    PedestrianSignalScoreButtonSize = TAZAverageField(
-        'Pedestrian Signal Button Size Score',
-        relationship='pedestriansignal_set',
-        value_field='ScoreButtonSize')
-
-    PedestrianSignalScoreButtonHeight = TAZAverageField(
-        'Pedestrian Signal Button Height Score',
-        relationship='pedestriansignal_set',
-        value_field='ScoreButtonHeight')
-
-    PedestrianSignalScoreButtonPositionAppearance = TAZAverageField(
-        'Pedestrian Signal Button Position and Appearance Score',
-        relationship='pedestriansignal_set',
-        value_field='ScoreButtonPositionAppearance')
-
-    PedestrianSignalScoreTactileFeatures = TAZAverageField(
-        'Pedestrian Signal Tactile Features Score',
-        relationship='pedestriansignal_set',
-        value_field='ScoreTactileFeatures')
-
-    PedestrianSignalScoreCompliance = TAZAverageField(
-        'Pedestrian Signal Compliance Score',
-        relationship='pedestriansignal_set',
-        value_field='ScoreCompliance')
-
-    # Combined sidewalk and curb ramp scores.
-    CombinedScoreCondition = WeightsField(
-        'Average Combined Condition',
-        condition='SidewalkScoreCondition is not None and '
-                  'CurbRampScoreCondition is not None',
-        weights={
-            'SidewalkScoreCondition': 0.5,
-            'CurbRampScoreCondition': 0.5,
-        },
-        storage={'field_type': 'DOUBLE'})
 
 
 class SidewalkSegment(BaseFeature):
@@ -612,11 +275,6 @@ class SidewalkSegment(BaseFeature):
     Shape = GeometryField(
         'Shape',
         deferred=False)
-
-    TAZ = ForeignKey(
-        'TAZ',
-        origin_class=TrafficAnalysisZone,
-        db_name='TAZOID')
 
     @property
     def obstruction_types_count(self):
@@ -1140,11 +798,6 @@ class CurbRamp(InventoryFeature):
             'ScoreCrackedPanelCount': 0.333,
         })
 
-    TAZ = ForeignKey(
-        'TAZ',
-        origin_class=TrafficAnalysisZone,
-        db_name='TAZOID')
-
     @property
     def has_ramp(self):
         return self.RampType != D('None')
@@ -1296,11 +949,6 @@ class Crosswalk(InventoryFeature):
             'ScoreCrossSlope': 0.5,
         })
 
-    TAZ = ForeignKey(
-        'TAZ',
-        origin_class=TrafficAnalysisZone,
-        db_name='TAZOID')
-
     def clean(self):
         no_width = (D('No Painted Markings'), D('Box for Exclusive Period'))
         if self.MarkingType in no_width and self.Width is None:
@@ -1366,11 +1014,6 @@ class PedestrianSignal(InventoryFeature):
         'Compliance Score',
         condition='self.qa_complete',
         method_name='_compliance_score')
-
-    TAZ = ForeignKey(
-        'TAZ',
-        origin_class=TrafficAnalysisZone,
-        db_name='TAZOID')
 
     def _position_appearance_score(self, field_name):
         score = 0
