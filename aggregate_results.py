@@ -55,6 +55,19 @@ for (fc_name, fc_label, fc_path) in FEATURE_CLASSES:
     ftl_name = create_memory_layer()
     arcpy.FeatureClassToFeatureClass_conversion(
         fc_path, 'in_memory', ftl_name, field_mapping=field_mappings)
+
+    # Add a feature count field, and set it to 1 if the compliance score
+    # is not null for each feature.
+    count_field_name = fc_name + 'Count'
+    arcpy.AddField_management(
+        memory_path(ftl_name), count_field_name, 'LONG',
+        field_alias=fc_label + ' Count')
+
+    arcpy.CalculateField_management(
+        memory_path(ftl_name), count_field_name,
+        '0 if !%s! is None else 1' % (fc_name + 'ScoreCompliance',), 'PYTHON')
+
+    # Create a list of field name.
     ftl_field_names = [f.name for f in arcpy.ListFields(memory_path(ftl_name))]
 
     # Check whether this is a linear feature.
@@ -97,6 +110,12 @@ for (fc_name, fc_label, fc_path) in FEATURE_CLASSES:
         field_map.mergeRule = 'Sum' if is_linear else 'Mean'
         field_mappings.addFieldMap(field_map)
 
+    # Add the count field.
+    field_map = arcpy.FieldMap()
+    field_map.addInputField(memory_path(ftl_name), count_field_name)
+    field_map.mergeRule = 'Sum'
+    field_mappings.addFieldMap(field_map)
+
     # For linear features, add the length field.
     if is_linear:
         field_map = arcpy.FieldMap()
@@ -112,13 +131,9 @@ for (fc_name, fc_label, fc_path) in FEATURE_CLASSES:
         field_mapping=field_mappings,
         match_option='CONTAINS' if is_linear else 'INTERSECT')
 
-    # Rename the count field.
-    arcpy.AlterField_management(
-        memory_path(join_name), 'Join_Count', fc_name + 'Count',
-        fc_label + ' Count')
-
-    # Remove the TARGET_FID field.
+    # Remove the automatic TARGET_FID and Join_Count field.
     arcpy.DeleteField_management(memory_path(join_name), 'TARGET_FID')
+    arcpy.DeleteField_management(memory_path(join_name), 'Join_Count')
 
     # Divide scores for linear features by the total length.
     if is_linear:
