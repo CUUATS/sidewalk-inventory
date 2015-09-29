@@ -71,11 +71,17 @@ SURFACE_CONDITION_SCALE = DictScale({
     'None': 100,
 })
 
-VERTICAL_FAULT_FREQUENCY_SCALE = BreaksScale(
+SIDEWALK_VERTICAL_FAULT_COUNT_SCALE = BreaksScale(
     [50, 100, 150, 200], [100, 80, 60, 40, 20], False)
 
-CRACKED_PANEL_SCALE = BreaksScale(
-    [0.1, 0.2, 0.3, 0.4], [100, 80, 60, 40, 20], False)
+CURB_RAMP_VERTICAL_FAULT_COUNT_SCALE = BreaksScale(
+    [0, 1, 2, 3], [100, 80, 60, 40, 20], True)
+
+SIDEWALK_CRACKED_PANEL_SCALE = BreaksScale(
+    [0.025, 0.05, 0.075, 0.1], [100, 80, 60, 40, 20], False)
+
+CURB_RAMP_CRACKED_PANEL_SCALE = BreaksScale(
+    [0, 1, 2, 3], [100, 80, 60, 40, 20], True)
 
 OBSTRUCTION_TYPES_SCALE = BreaksScale(
     [0, 1], [100, 50, 0], True)
@@ -254,13 +260,13 @@ class SidewalkSegment(BaseFeature):
     ScoreVerticalFaultCount = ScaleField(
         'Vertical Fault Count Score',
         condition='self.qa_complete',
-        scale=VERTICAL_FAULT_FREQUENCY_SCALE,
+        scale=SIDEWALK_VERTICAL_FAULT_COUNT_SCALE,
         value_field='VerticalFaultCount/self.condition_length')
 
     ScoreCrackedPanelCount = ScaleField(
         'Cracked Panel Count Score',
         condition='self.qa_complete',
-        scale=CRACKED_PANEL_SCALE,
+        scale=SIDEWALK_CRACKED_PANEL_SCALE,
         value_field='CrackedPanelCount/(self.condition_length*1056)')
 
     ScoreCondition = WeightsField(
@@ -780,14 +786,14 @@ class CurbRamp(InventoryFeature):
     ScorePavementFaultCount = ScaleField(
         'Vertical Fault Count Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=VERTICAL_FAULT_FREQUENCY_SCALE,
-        value_field='PavementFaultCount/self.condition_length')
+        scale=CURB_RAMP_VERTICAL_FAULT_COUNT_SCALE,
+        value_field='PavementFaultCount')
 
     ScoreCrackedPanelCount = ScaleField(
         'Cracked Panel Count Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=CRACKED_PANEL_SCALE,
-        value_field='CrackedPanelCount/(self.condition_length*1056)')
+        scale=CURB_RAMP_CRACKED_PANEL_SCALE,
+        value_field='CrackedPanelCount')
 
     ScoreCondition = WeightsField(
         'Condition Score',
@@ -844,19 +850,6 @@ class CurbRamp(InventoryFeature):
         # ramp, while features with a running slope less than or equal to
         # 5.0% are scored as blended transitions.
         return self.RampRunningSlope <= 5
-
-    @property
-    def condition_length(self):
-        """
-        Returns the length, in miles, used for calculating condition scores.
-        """
-
-        length = self.RampLength
-        if self.RampType in (D('Perpendicular'), D('Combination')):
-            length += self.LandingLength
-        elif self.RampType == D('Parallel'):
-            length += self.LandingWidth
-        return length/5280
 
     @property
     def aggregate_scores(self):
