@@ -301,3 +301,32 @@ CREATE INDEX missing_segment_geom
 
 -- Update table statistics.
 ANALYZE missing_segment;
+
+-- STEP 6: CALCULATE GAP LENGTH RATIO
+-- Gap length ratio is the ratio of the length of the missing segment to
+-- the combined length of all existing sidewalks within a 1/4-mile buffer
+-- around the missing segment. Gap length ratio is inversely related to
+-- connectivity. A small gap length ratio indicates a large potential increase
+-- in connectivity relative to the cost of filling the gap.
+
+-- Add a new column for gap length ratio.
+ALTER TABLE missing_segment
+ADD COLUMN gap_length_ratio double precision;
+
+UPDATE missing_segment
+SET gap_length_ratio = gap_length.ratio
+FROM (
+  SELECT missing_segment.gid,
+    -- Divide the length of the segment by the length of existing segments
+    -- clipped to a 1/4 mile buffer.
+    ST_Length(missing_segment.geom)/
+      ST_Length(ST_Intersection(
+        ST_Buffer(missing_segment.geom, 1320),
+        ST_Collect(sidewalk.geom))) AS ratio
+  FROM missing_segment
+  INNER JOIN sidewalk
+    -- Join missing segments to existing segments that are within 1/4 mile.
+    ON ST_DWithin(missing_segment.geom, sidewalk.geom, 1320)
+  GROUP BY missing_segment.gid, missing_segment.geom
+) AS gap_length
+WHERE missing_segment.gid = gap_length.gid;
