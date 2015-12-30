@@ -244,7 +244,7 @@ class SidewalkSegment(BaseFeature):
         'Compliance Score',
         condition='self.qa_complete',
         weights={
-            'ScoreCrossSlope': 0.25,
+            'ScoreMaxCrossSlope': 0.25,
             'ScoreLargestVerticalFault': 0.25,
             'ScoreObstructionTypes': 0.25,
             'ScoreWidth': 0.25,
