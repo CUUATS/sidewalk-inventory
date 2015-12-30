@@ -47,26 +47,29 @@ for label, feature_class in feature_classes.items():
         rels = PREFETCH_RELS[feature_class.__name__]
         features = features.prefetch_related(*rels)
 
-    for feature in display_progress(features, label):
-        feature.perform_qa()
-        feature.assign_staticid()
-        update_count += int(feature.save())
+    with feature_class.workspace.edit():
+        for feature in display_progress(features, label):
+            feature.perform_qa()
+            feature.assign_staticid()
+            update_count += int(feature.save())
 
     results.append('%s: Updated %i rows' % (label, update_count))
 
 if not args.no_rels:
     # Update the nearest sidewalk segment relationship.
     print 'Updating nearest sidewalk segment...'
-    SidewalkSegment.workspace.update_spatial_relationship(
-        'SidewalkNearestSegment', 'CLOSEST', 25)
+    with SidewalkSegment.workspace.edit():
+        SidewalkSegment.workspace.update_spatial_relationship(
+            'SidewalkNearestSegment', 'CLOSEST', 25)
 
     # Update segment fields based on the nearest segment relationship.
     print 'Updating sidewalk segment statistics...'
     update_count = 0
     segments = SidewalkSegment.objects.prefetch_related('sidewalk_set')
-    for segment in display_progress(segments, 'Sidewalk Segments'):
-        segment.update_sidewalk_fields()
-        update_count += int(segment.save())
+    with SidewalkSegment.workspace.edit():
+        for segment in display_progress(segments, 'Sidewalk Segments'):
+            segment.update_sidewalk_fields()
+            update_count += int(segment.save())
     results.append('%s: Updated %i rows' % ('Sidewalk Segments', update_count))
 
 # Print results.

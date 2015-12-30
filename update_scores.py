@@ -16,18 +16,23 @@ SidewalkSegment.register(SS_PATH)
 
 # Perform scoring.
 print 'Scoring features...'
-sidewalk_segments = SidewalkSegment.objects.prefetch_related('sidewalk_set')
-for feature in display_progress(sidewalk_segments, 'Sidewalks'):
-    feature.update_sidewalk_fields()
-    feature.save()
+with SidewalkSegment.workspace.edit():
+    sidewalk_segments = SidewalkSegment.objects.prefetch_related(
+        'sidewalk_set')
+    for feature in display_progress(sidewalk_segments, 'Sidewalks'):
+        feature.update_sidewalk_fields()
+        feature.save()
 
-curb_ramps = CurbRamp.objects.exclude(RampType=D('None'))
-for cr in display_progress(curb_ramps, 'Curb Ramps'):
-    cr.save()
+with CurbRamp.workspace.edit():
+    curb_ramps = CurbRamp.objects.exclude(RampType=D('None'))
+    for cr in display_progress(curb_ramps, 'Curb Ramps'):
+        cr.save()
 
-for cw in display_progress(Crosswalk.objects.all(), 'Crosswalks'):
-    cw.save()
+with Crosswalk.workspace.edit():
+    for cw in display_progress(Crosswalk.objects.all(), 'Crosswalks'):
+        cw.save()
 
-for ps in display_progress(
-        PedestrianSignal.objects.all(), 'Pedestrian Signals'):
-    ps.save()
+with PedestrianSignal.workspace.edit():
+    for ps in display_progress(
+            PedestrianSignal.objects.all(), 'Pedestrian Signals'):
+        ps.save()
