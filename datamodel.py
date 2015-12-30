@@ -590,9 +590,6 @@ class CurbRamp(InventoryFeature):
         'In Median',
         required_if='self.has_ramp')
 
-    SingleApproach = NumericField(
-        'Single Approach')
-
     Comment = StringField(
         'Comment')
 
