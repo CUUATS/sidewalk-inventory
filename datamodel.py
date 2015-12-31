@@ -30,7 +30,7 @@ DWS_TYPE_SCALE = DictScale({
 })
 
 DWS_WIDTH_SCALE = BreaksScale(
-    [0, 0.7, 0.8, 0.9, 1], [0, 20, 40, 60, 80, 100], True)
+    [0.7, 0.8, 0.9, 1], [20, 40, 60, 80, 100], False)
 
 GUTTER_RUNNING_SLOPE_SCALE = BreaksScale(
     [5, 7, 9, 11, 13], [100, 80, 60, 40, 20, 0], True)
@@ -95,7 +95,7 @@ SCORE_BUTTON_SIZE = DictScale({
     'Accessible - 2 inches or greater': 100,
 })
 
-CROSSWALK_STOP_CROSS_SLOPE_SCALE = BreaksScale(
+CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale(
     [5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True)
 
 
@@ -623,10 +623,11 @@ class CurbRamp(InventoryFeature):
         'DWS Type Score',
         condition='self.qa_complete and self.has_ramp',
         scale=(
-            ('self.has_gutter', DWS_TYPE_SCALE),
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(100))
+            ('not self.has_gutter', StaticScale(100)),
+            ('self.has_dws', DWS_TYPE_SCALE),
+            ('not self.has_dws', StaticScale(0)),
         ),
         use_description=True,
         value_field='DetectableWarningType')
@@ -635,13 +636,13 @@ class CurbRamp(InventoryFeature):
         'DWS Width Score',
         condition='self.qa_complete and self.has_ramp',
         scale=(
-            ('self.has_gutter', DWS_WIDTH_SCALE),
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(100))
+            ('not self.has_gutter', StaticScale(100)),
+            ('self.has_dws', DWS_WIDTH_SCALE),
+            ('not self.has_dws', StaticScale(0)),
         ),
-        value_field='DetectableWarningWidth/'
-                    '((self.is_parallel and LandingWidth) or RampWidth)')
+        value_field='self.dws_coverage')
 
     ScoreGutterCrossSlope = ScaleField(
         'Gutter Cross Slope Score',
@@ -667,6 +668,7 @@ class CurbRamp(InventoryFeature):
     ScoreLandingSlope = ScaleField(
         'Landing Slope Score',
         scale=(
+            ('not self.has_landing', StaticScale(0)),
             ('not self.is_blended_transition', CROSS_SLOPE_SCALE),
             ('self.is_blended_transition', StaticScale(100)),
         ),
@@ -849,6 +851,17 @@ class CurbRamp(InventoryFeature):
         return self.RampRunningSlope <= 5
 
     @property
+    def dws_coverage(self):
+        # We subtract four inches from the ramp/landing width to account for
+        # the two-inch border allowed around truncated domes to secure them to
+        # the ramp.
+        if self.is_parallel and self.has_landing:
+            full_width = self.LandingWidth
+        else:
+            full_width = self.RampWidth
+        return self.DetectableWarningWidth/(full_width - 4)
+
+    @property
     def aggregate_scores(self):
         return self.qa_complete and self.has_ramp
 
@@ -912,23 +925,51 @@ class CurbRamp(InventoryFeature):
 
 class Crosswalk(InventoryFeature):
 
-    SurfaceType = NumericField('Surface Type', required=True)
-    Width = NumericField('Width', required=True)
-    CrossSlope = SlopeField('Cross Slope', max=25, required=True)
-    MarkingType = NumericField('Marking Type', required=True)
-    Comment = StringField('Comment')
+    SurfaceType = NumericField(
+        'Surface Type',
+        required=True)
+
+    Width = NumericField(
+        'Width',
+        required=True)
+
+    CrossSlope = SlopeField(
+        'Cross Slope',
+        max=25,
+        required=True)
+
+    MarkingType = NumericField(
+        'Marking Type',
+        required=True)
+
+    Comment = StringField(
+        'Comment')
+
+    StopControlledIntersection = NumericField(
+        'Stop-Controlled Intersection')
+
+    MidblockCrossing = NumericField(
+        'Midblock Crossing')
 
     # Score fields
     ScoreWidth = ScaleField(
         'Width Score',
         condition='self.qa_complete',
-        scale=WIDTH_SCALE,
+        scale=(
+            ('self.has_width', WIDTH_SCALE),
+            ('not self.has_width', StaticScale(100)),
+        ),
         value_field='Width')
 
     ScoreCrossSlope = ScaleField(
         'Cross Slope Score',
         condition='self.qa_complete',
-        scale=CROSSWALK_STOP_CROSS_SLOPE_SCALE,
+        scale=(
+            ('self.is_midblock', StaticScale(100)),
+            ('self.is_stop_controlled', CROSS_SLOPE_SCALE),
+            ('not self.is_stop_controlled',
+             CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE),
+        ),
         value_field='CrossSlope')
 
     ScoreCompliance = WeightsField(
@@ -939,9 +980,21 @@ class Crosswalk(InventoryFeature):
             'ScoreCrossSlope': 0.5,
         })
 
+    @property
+    def has_width(self):
+        return self.MarkingType not in (
+            D('No Painted Markings'), D('Box for Exclusive Period'))
+
+    @property
+    def is_stop_controlled(self):
+        return self.StopControlledIntersection == D('Yes')
+
+    @property
+    def is_midblock(self):
+        return self.MidblockCrossing == D('Yes')
+
     def clean(self):
-        no_width = (D('No Painted Markings'), D('Box for Exclusive Period'))
-        if self.MarkingType in no_width and self.Width is None:
+        if not self.has_width and self.Width is None:
             self.Width = 0
 
 
