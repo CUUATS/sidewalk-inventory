@@ -1074,9 +1074,9 @@ class PedestrianSignal(InventoryFeature):
 
     def _tactile_features_score(self, field_name):
         score = 0
-        if self.TactileArrowPresent:
+        if self.TactileArrowPresent == D('Yes'):
             score += 50
-        if self.VibrotactileSignal:
+        if self.VibrotactileSignal == D('Yes'):
             score += 50
         return score
 
