@@ -6,7 +6,8 @@ import argparse
 from cuuats.datamodel import D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
+from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
+    SS_REL_NAME
 from utils import display_progress
 
 PREFETCH_RELS = {
@@ -60,7 +61,7 @@ if not args.no_rels:
     print 'Updating nearest sidewalk segment...'
     with SidewalkSegment.workspace.edit():
         SidewalkSegment.workspace.update_spatial_relationship(
-            'SidewalkNearestSegment', 'CLOSEST', 25)
+            SS_REL_NAME, 'CLOSEST', 25)
 
     # Update segment fields based on the nearest segment relationship.
     print 'Updating sidewalk segment statistics...'

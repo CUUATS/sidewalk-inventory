@@ -8,6 +8,7 @@ CR_PATH = r''  # Curb ramps
 CW_PATH = r''  # Crosswalks
 PS_PATH = r''  # Pedestrian signals
 SS_PATH = r''  # Sidewalk segments
+SS_REL_NAME = r''  # Sidewalk-sidewalk segment relationship class
 
 # Paths to analysis zones and results.
 # Note: The results feature will be overwritten by the results
