@@ -17,11 +17,23 @@ WIDTH_SCALE = BreaksScale([36, 39, 42, 45, 48], [
     ScaleLevel(100, '48 inches or more', 1),
 ], False)
 
-IN_MEDIAN_WIDTH_SCALE = BreaksScale(
-    [48, 51, 54, 57, 60], [0, 20, 40, 60, 80, 100], False)
+IN_MEDIAN_WIDTH_SCALE = BreaksScale([48, 51, 54, 57, 60], [
+    ScaleLevel(0, '47 inches or less', 6),
+    ScaleLevel(20, '48 to 50 inches', 5),
+    ScaleLevel(40, '51 to 53 inches', 4),
+    ScaleLevel(60, '54 to 56 inches', 3),
+    ScaleLevel(80, '57 to 59 inches', 2),
+    ScaleLevel(100, '60 inches or more', 1),
+], False)
 
-CROSS_SLOPE_SCALE = BreaksScale(
-    [2, 4, 6, 8, 10], [100, 80, 60, 40, 20, 0], True)
+CROSS_SLOPE_SCALE = BreaksScale([2, 4, 6, 8, 10], [
+    ScaleLevel(100, '2 % or less', 6),
+    ScaleLevel(80, '2.1 % to 4.0 %', 5),
+    ScaleLevel(60, '4.1 % to 6.0 %', 4),
+    ScaleLevel(40, '6.1 % to 8.0 %', 3),
+    ScaleLevel(20, '8.1 % to 10.0 %', 2),
+    ScaleLevel(0, '10.1 % or more', 1),
+], True)
 
 RAMP_RUNNING_SLOPE_SCALE = BreaksScale(
     [8.3, 9.3, 10.3], [100, 67, 33, 0], True)
@@ -45,12 +57,14 @@ GUTTER_RUNNING_SLOPE_SCALE = BreaksScale(
 LANDING_DIMENSIONS_SCALE = BreaksScale(
     [24, 30, 36, 42, 48], [0, 20, 40, 60, 80, 100], False)
 
+VERTICAL_FAULT_COMPLIANT = ScaleLevel(100, 'Less than 1/4 inch, or beveled', 1)
 LARGEST_VFAULT_SCALE = DictScale({
-    'Over 0.50 inch': 0,
-    'Between 0.25 and 0.50 inch, no bevel': 50,
-    'All vertical discontinuities compliant': 100,
-    'None': 100,
-    'N/A': 100,
+    'Over 0.50 inch': ScaleLevel(0, 'More than 1/2 inch', 3),
+    'Between 0.25 and 0.50 inch, no bevel':
+        ScaleLevel(50, '1/4 inch to 1/2 inch, not beveled', 2),
+    'All vertical discontinuities compliant': VERTICAL_FAULT_COMPLIANT,
+    'None': VERTICAL_FAULT_COMPLIANT,
+    'N/A': VERTICAL_FAULT_COMPLIANT,
 })
 
 OBSTRUCTION_SCALE = DictScale({
@@ -90,8 +104,11 @@ SIDEWALK_CRACKED_PANEL_SCALE = BreaksScale(
 CURB_RAMP_CRACKED_PANEL_SCALE = BreaksScale(
     [0, 1, 2, 3], [100, 80, 60, 40, 20], True)
 
-OBSTRUCTION_TYPES_SCALE = BreaksScale(
-    [0, 1], [100, 50, 0], True)
+OBSTRUCTION_TYPES_SCALE = BreaksScale([0, 1], [
+    ScaleLevel(100, 'No obstructions present', 1),
+    ScaleLevel(50, 'One type present', 2),
+    ScaleLevel(0, 'Two or more types present', 3),
+], True)
 
 SCORE_BUTTON_HEIGHT = BreaksScale(
     [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True)
