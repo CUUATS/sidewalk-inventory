@@ -4,11 +4,18 @@ Sidewalk Inventory and Assessment data model.
 
 from cuuats.datamodel import D, BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, ForeignKey, ScaleField, \
-    WeightsField, MethodField, BreaksScale, DictScale, StaticScale
+    WeightsField, MethodField, BreaksScale, DictScale, StaticScale, \
+    ScaleLevel
 
 # Scales
-WIDTH_SCALE = BreaksScale(
-    [36, 39, 42, 45, 48], [0, 20, 40, 60, 80, 100], False)
+WIDTH_SCALE = BreaksScale([36, 39, 42, 45, 48], [
+    ScaleLevel(0, '35 inches or less', 6),
+    ScaleLevel(20, '36 to 38 inches', 5),
+    ScaleLevel(40, '39 to 41 inches', 4),
+    ScaleLevel(60, '42 to 44 inches', 3),
+    ScaleLevel(80, '45 to 47 inches', 2),
+    ScaleLevel(100, '48 inches or more', 1),
+], False)
 
 IN_MEDIAN_WIDTH_SCALE = BreaksScale(
     [48, 51, 54, 57, 60], [0, 20, 40, 60, 80, 100], False)
