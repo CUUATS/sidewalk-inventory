@@ -17,22 +17,13 @@ WIDTH_SCALE = BreaksScale([36, 39, 42, 45, 48], [
     ScaleLevel(100, '48 inches or more', 1),
 ], False)
 
-IN_MEDIAN_WIDTH_SCALE = BreaksScale([48, 51, 54, 57, 60], [
-    ScaleLevel(0, '47 inches or less', 6),
-    ScaleLevel(20, '48 to 50 inches', 5),
-    ScaleLevel(40, '51 to 53 inches', 4),
-    ScaleLevel(60, '54 to 56 inches', 3),
-    ScaleLevel(80, '57 to 59 inches', 2),
-    ScaleLevel(100, '60 inches or more', 1),
-], False)
-
 CROSS_SLOPE_SCALE = BreaksScale([2, 4, 6, 8, 10], [
-    ScaleLevel(100, '2 % or less', 6),
-    ScaleLevel(80, '2.1 % to 4.0 %', 5),
-    ScaleLevel(60, '4.1 % to 6.0 %', 4),
-    ScaleLevel(40, '6.1 % to 8.0 %', 3),
-    ScaleLevel(20, '8.1 % to 10.0 %', 2),
-    ScaleLevel(0, '10.1 % or more', 1),
+    ScaleLevel(100, '2 % or less', 1),
+    ScaleLevel(80, '2.1 % to 4.0 %', 2),
+    ScaleLevel(60, '4.1 % to 6.0 %', 3),
+    ScaleLevel(40, '6.1 % to 8.0 %', 4),
+    ScaleLevel(20, '8.1 % to 10.0 %', 5),
+    ScaleLevel(0, '10.1 % or more', 6),
 ], True)
 
 RAMP_RUNNING_SLOPE_SCALE = BreaksScale([8.3, 9.3, 10.3], [
@@ -42,14 +33,17 @@ RAMP_RUNNING_SLOPE_SCALE = BreaksScale([8.3, 9.3, 10.3], [
     ScaleLevel(0, '10.4 % or more', 4),
 ], True)
 
+RAMP_RUNNING_SLOPE_MIN_SCALE = StaticScale(
+    ScaleLevel(100, 'Running slope is 5.0 % or less', 1))
+
 TRUNCATED_DOMES = ScaleLevel(100, 'Truncated domes', 1)
 NO_DWS = ScaleLevel(0, 'None', 4)
 DWS_TYPE_SCALE = DictScale({
-    'Truncated Domes - YELLOW': TRUNCATED_DOMES
+    'Truncated Domes - YELLOW': TRUNCATED_DOMES,
     'Truncated Domes - RED': TRUNCATED_DOMES,
     'Truncated Domes - OTHER': TRUNCATED_DOMES,
     'Pavement Grooves': ScaleLevel(50, 'Pavement grooves', 2),
-    'Other': ScaleLeve(50, 'Other', 3),
+    'Other': ScaleLevel(50, 'Other', 3),
     'None': NO_DWS,
     'N/A': NO_DWS,
 })
@@ -79,6 +73,9 @@ LANDING_DIMENSIONS_SCALE = BreaksScale([24, 30, 36, 42, 48], [
     ScaleLevel(80, '42 to 47 inches', 2),
     ScaleLevel(100, '48 inches or more', 1),
 ], False)
+
+NO_LANDING_SCALE = StaticScale(
+    ScaleLevel(0, 'No landing', 1))
 
 VERTICAL_FAULT_COMPLIANT = ScaleLevel(100, 'Less than 1/4 inch, or beveled', 1)
 LARGEST_VFAULT_SCALE = DictScale({
@@ -174,7 +171,7 @@ SCORE_BUTTON_HEIGHT = BreaksScale([5, 10, 15, 49, 54, 59], [
 
 SCORE_BUTTON_SIZE = DictScale({
     'Very Small - < 1/2 inch': ScaleLevel(33, '0.4 inches or less', 3),
-    'Medium - roughly 1 inch': ScaleLeve(67, '0.5 to 1.9 inches', 2),
+    'Medium - roughly 1 inch': ScaleLevel(67, '0.5 to 1.9 inches', 2),
     'Accessible - 2 inches or greater': ScaleLevel(
         100, '2 inches or greater', 1),
 })
@@ -691,10 +688,7 @@ class CurbRamp(InventoryFeature):
     ScoreRampWidth = ScaleField(
         'Ramp Width Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=(
-            ('not self.in_median', WIDTH_SCALE),
-            ('self.in_median', IN_MEDIAN_WIDTH_SCALE),
-        ),
+        scale=WIDTH_SCALE,
         value_field='RampWidth')
 
     ScoreRampCrossSlope = ScaleField(
@@ -706,7 +700,11 @@ class CurbRamp(InventoryFeature):
     ScoreRampRunningSlope = ScaleField(
         'Ramp Running Slope Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=RAMP_RUNNING_SLOPE_SCALE,
+        scale=(
+            ('self.RampLength > 15*12', StaticScale(
+                ScaleLevel(100, 'Ramp length > 15 feet', 1)), 2),
+            ('self.RampLength <= 15*12', RAMP_RUNNING_SLOPE_SCALE, 1),
+        ),
         value_field='RampRunningSlope')
 
     ScoreDetectableWarningType = ScaleField(
@@ -753,8 +751,9 @@ class CurbRamp(InventoryFeature):
     ScoreLandingDimensions = ScaleField(
         'Landing Dimensions Score',
         scale=(
-            ('not self.is_blended_transition', LANDING_DIMENSIONS_SCALE),
-            ('self.is_blended_transition', StaticScale(100)),
+            ('self.is_blended_transition', RAMP_RUNNING_SLOPE_MIN_SCALE, 3),
+            ('not self.has_landing', NO_LANDING_SCALE, 2),
+            ('not self.is_blended_transition', LANDING_DIMENSIONS_SCALE, 1),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='min(LandingWidth, LandingLength)')
@@ -762,9 +761,9 @@ class CurbRamp(InventoryFeature):
     ScoreLandingSlope = ScaleField(
         'Landing Slope Score',
         scale=(
-            ('not self.has_landing', StaticScale(0)),
-            ('not self.is_blended_transition', CROSS_SLOPE_SCALE),
-            ('self.is_blended_transition', StaticScale(100)),
+            ('not self.is_blended_transition', CROSS_SLOPE_SCALE, 1),
+            ('not self.has_landing', NO_LANDING_SCALE, 2),
+            ('self.is_blended_transition', RAMP_RUNNING_SLOPE_MIN_SCALE, 3),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LandingRunningSlope, LandingCrossSlope)')
