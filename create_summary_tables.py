@@ -16,6 +16,10 @@ CURB_RAMP_FIELDS = [
     ('ScoreGutterRunningSlope', 'Running Slope'),
     ('ScoreLandingDimensions', 'Minimum Dimension'),
     ('ScoreLandingSlope', 'Maximum Slope'),
+    ('ScoreApproachCrossSlope', 'Maximum Cross Slope'),
+    ('ScoreFlareSlope', 'Flare Slope'),
+    ('ScoreLargestPavementFault', 'Largest Vertical Fault'),
+    ('ScoreObstruction', 'Presence of Obstruction'),
 ]
 
 SIDEWALK_SEGMENT_FIELDS = [

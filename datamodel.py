@@ -761,9 +761,9 @@ class CurbRamp(InventoryFeature):
     ScoreLandingSlope = ScaleField(
         'Landing Slope Score',
         scale=(
-            ('not self.is_blended_transition', CROSS_SLOPE_SCALE, 1),
-            ('not self.has_landing', NO_LANDING_SCALE, 2),
             ('self.is_blended_transition', RAMP_RUNNING_SLOPE_MIN_SCALE, 3),
+            ('not self.has_landing', NO_LANDING_SCALE, 2),
+            ('not self.is_blended_transition', CROSS_SLOPE_SCALE, 1),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LandingRunningSlope, LandingCrossSlope)')
@@ -771,8 +771,9 @@ class CurbRamp(InventoryFeature):
     ScoreApproachCrossSlope = ScaleField(
         'Approach Cross Slope Score',
         scale=(
-            ('self.approach_count > 0', CROSS_SLOPE_SCALE),
-            ('self.approach_count == 0', StaticScale(100))
+            ('self.approach_count > 0', CROSS_SLOPE_SCALE, 1),
+            ('self.approach_count == 0', StaticScale(
+                ScaleLevel(100, 'No approaches', 1)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LeftApproachCrossSlope, RightApproachCrossSlope)')
@@ -780,8 +781,9 @@ class CurbRamp(InventoryFeature):
     ScoreFlareSlope = ScaleField(
         'Flare Slope Score',
         scale=(
-            ('self.has_flares', FLARE_SLOPE_SCALE),
-            ('not self.has_flares', StaticScale(100)),
+            ('self.has_flares', FLARE_SLOPE_SCALE, 1),
+            ('not self.has_flares', StaticScale(
+                ScaleLevel(100, 'No flares', 1)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='FlareSlope')
