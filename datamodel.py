@@ -185,6 +185,15 @@ CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale([5, 6, 7, 8, 9], [
     ScaleLevel(0, '9.1 % or more', 6),
 ], True)
 
+SCORE_SCALE = BreaksScale([60, 70, 80, 90, 100], [
+    ScaleLevel(None, '60 or less', 6),
+    ScaleLevel(None, '> 60 to 70', 5),
+    ScaleLevel(None, '> 70 to 80', 4),
+    ScaleLevel(None, '> 80 to 90', 3),
+    ScaleLevel(None, '> 90 to 100', 2),
+    ScaleLevel(None, 'Invalid score', 1),
+], True)
+
 
 class SlopeField(NumericField):
     """
@@ -330,6 +339,7 @@ class SidewalkSegment(BaseFeature):
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreMaxCrossSlope': 0.25,
             'ScoreLargestVerticalFault': 0.25,
@@ -854,6 +864,7 @@ class CurbRamp(InventoryFeature):
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete and self.has_ramp',
+        scale=SCORE_SCALE,
         weights={
             'ScoreRampWidth': 0.05,
             'ScoreRampCrossSlope': 0.1,

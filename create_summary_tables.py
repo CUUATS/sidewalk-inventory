@@ -20,6 +20,7 @@ CURB_RAMP_FIELDS = [
     ('ScoreFlareSlope', 'Flare Slope'),
     ('ScoreLargestPavementFault', 'Largest Vertical Fault'),
     ('ScoreObstruction', 'Presence of Obstruction'),
+    ('ScoreCompliance', 'Compliance Score'),
 ]
 
 SIDEWALK_SEGMENT_FIELDS = [
@@ -27,6 +28,7 @@ SIDEWALK_SEGMENT_FIELDS = [
     ('ScoreLargestVerticalFault', 'Largest Vertical Fault'),
     ('ScoreObstructionTypes', 'Number of Obstruction Types'),
     ('ScoreWidth', 'Minimum Sidewalk Width'),
+    ('ScoreCompliance', 'Compliance Score'),
 ]
 
 def feature_table(query_set, summary_field, column_label, feature_label):
@@ -62,6 +64,9 @@ def feature_table(query_set, summary_field, column_label, feature_label):
             '{:,d}'.format(level['count']),
             percent,
         ])
+
+    if all(l['value'] is None for l in levels):
+        results = [r[:1] + r[2:] for r in results]
 
     return results
 
