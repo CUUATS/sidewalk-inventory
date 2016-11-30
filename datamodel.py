@@ -160,7 +160,7 @@ OBSTRUCTION_TYPES_SCALE = BreaksScale([0, 1], [
     L(0, 'Two or more types present', 3),
 ], True)
 
-SCORE_BUTTON_HEIGHT = BreaksScale([5, 10, 15, 49, 54, 59], [
+BUTTON_HEIGHT_SCALE = BreaksScale([4, 9, 14, 48, 53, 58], [
     L(0, '4 inches or less', 1),
     L(20, '5 to 9 inches', 2),
     L(60, '10 to 14 inches', 3),
@@ -170,12 +170,14 @@ SCORE_BUTTON_HEIGHT = BreaksScale([5, 10, 15, 49, 54, 59], [
     L(0, '59 inches or greater', 7),
 ], True)
 
-SCORE_BUTTON_SIZE = DictScale({
+BUTTON_SIZE_SCALE = DictScale({
     'Very Small - < 1/2 inch': L(33, '0.4 inches or less', 3),
     'Medium - roughly 1 inch': L(67, '0.5 to 1.9 inches', 2),
     'Accessible - 2 inches or greater': L(
         100, '2 inches or greater', 1),
 })
+
+NO_BUTTON_SCALE = StaticScale(L(None, 'No button', exclude=True))
 
 CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale([5, 6, 7, 8, 9], [
     L(100, '5.0 % or less', 1),
@@ -1144,15 +1146,21 @@ class PedestrianSignal(InventoryFeature):
     # Score fields
     ScoreButtonSize = ScaleField(
         'Button Size Score',
-        condition='self.qa_complete and self.has_button',
-        scale=SCORE_BUTTON_SIZE,
+        condition='self.qa_complete',
+        scale=(
+            ('not self.has_button', NO_BUTTON_SCALE, 2),
+            ('self.has_button', BUTTON_SIZE_SCALE, 1),
+        ),
         value_field='PedButtonSize',
         use_description=True)
 
     ScoreButtonHeight = ScaleField(
         'Button Height Score',
-        condition='self.qa_complete and self.has_button',
-        scale=SCORE_BUTTON_HEIGHT,
+        condition='self.qa_complete',
+        scale=(
+            ('not self.has_button', NO_BUTTON_SCALE, 2),
+            ('self.has_button', BUTTON_HEIGHT_SCALE, 1),
+        ),
         value_field='ButtonHeight')
 
     ScoreButtonPositionAppearance = MethodField(
@@ -1168,6 +1176,7 @@ class PedestrianSignal(InventoryFeature):
     ScoreCompliance = MethodField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         method_name='_compliance_score')
 
     def _position_appearance_score(self, field_name):
@@ -1202,7 +1211,8 @@ class PedestrianSignal(InventoryFeature):
 
     @property
     def has_button(self):
-        return self.PedButtonLocation not in (D('No Button'), D('N/A'))
+        return self.PedButtonLocation not in (D('No Button'), D('N/A')) and \
+            self.PedButtonSize != D('No Button')
 
     def clean(self):
         # Set irrelevant fields to N/A for signals that don't have a button.

@@ -37,6 +37,12 @@ CROSSWALK_FIELDS = [
     ('ScoreCompliance', 'Compliance Score'),
 ]
 
+PEDESTRIAN_SIGNAL_FIELDS = [
+    ('ScoreButtonSize', 'Button Diameter'),
+    ('ScoreButtonHeight', 'Button Height'),
+    ('ScoreCompliance', 'Compliance Score'),
+]
+
 def is_excluded(level):
     return ('exclude' in level and level['exclude'])
 
@@ -139,6 +145,12 @@ for (field, label) in CURB_RAMP_FIELDS:
 cw = Crosswalk.objects.filter(QAStatus=D('Complete'))
 for (field, label) in CROSSWALK_FIELDS:
     results['Crosswalk'][field] = feature_table(cw, field, label, 'Crosswalks')
+
+# Create crosswalk tables.
+ps = PedestrianSignal.objects.filter(QAStatus=D('Complete'))
+for (field, label) in PEDESTRIAN_SIGNAL_FIELDS:
+    results['PedestrianSignal'][field] = feature_table(
+        ps, field, label, 'Pedestrian Signals')
 
 # Create the output file or files.
 if args.format == 'json':
