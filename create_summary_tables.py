@@ -43,6 +43,19 @@ PEDESTRIAN_SIGNAL_FIELDS = [
     ('ScoreCompliance', 'Compliance Score'),
 ]
 
+BUTTON_POSITION_APPEARANCE_FIELDS = [
+    ('ButtonSpacing', 15, 'Pushbuttons at least 10 feet apart'),
+    ('ButtonOffsetFCurb', 15, 'Pushbuttons within 10 feet of curb'),
+    ('AllWeatherSurface', 15, 'All-weather surface adjacent to button'),
+    ('HighContrastButton', 25, 'High contrast button'),
+    ('LocatorTone', 30, 'Locator tone to find button'),
+]
+
+TACTILE_FEATURES_FIELDS = [
+    ('TactileArrowPresent', 50, 'Tactile arrow'),
+    ('VibrotactileSignal', 50, 'Vibrotactile signal or button'),
+]
+
 def is_excluded(level):
     return ('exclude' in level and level['exclude'])
 
@@ -82,7 +95,7 @@ def feature_table(query_set, summary_field, column_label, feature_label):
 
     return results
 
-def sidewalk_table(query_set, summary_field, column_label):
+def sidewalk_table(query_set, summary_field, column_label, feature_label):
     levels = query_set.summarize(
         summary_field, length='Shape.getLength("PLANAR", "MILES")')
     total_length = sum([l['length'] for l in levels])
@@ -97,6 +110,31 @@ def sidewalk_table(query_set, summary_field, column_label):
             str(level['value']),
             '{:.1f}'.format(level['length']),
             '{:.1f} %'.format(100*level['length']/total_length),
+        ])
+
+    return results
+
+def yes_table(query_set, fields, column_label):
+    total = query_set.count()
+
+    results = [
+        [
+            column_label,
+            'Score',
+            'Pedestrian Signals',
+            'Percent of Pedestrian Signals',
+        ]
+    ]
+
+    for (field_name, value, label) in fields:
+        count = sum(
+            [int(getattr(f, field_name) == D('Yes')) for f in query_set])
+
+        results.append([
+            label,
+            str(value),
+            '{:,d}'.format(count),
+            '{:.1f} %'.format(100*float(count)/total),
         ])
 
     return results
@@ -151,6 +189,12 @@ ps = PedestrianSignal.objects.filter(QAStatus=D('Complete'))
 for (field, label) in PEDESTRIAN_SIGNAL_FIELDS:
     results['PedestrianSignal'][field] = feature_table(
         ps, field, label, 'Pedestrian Signals')
+
+results['PedestrianSignal']['ScoreButtonPositionAppearance'] = yes_table(
+    ps, BUTTON_POSITION_APPEARANCE_FIELDS, 'Button Position and Appearance')
+
+results['PedestrianSignal']['ScoreTactileFeatures'] = yes_table(
+    ps, TACTILE_FEATURES_FIELDS, 'Tactile Features')
 
 # Create the output file or files.
 if args.format == 'json':
