@@ -12,6 +12,10 @@ SIDEWALK_SEGMENT_FIELDS = [
     ('ScoreObstructionTypes', 'Number of Obstruction Types'),
     ('ScoreWidth', 'Minimum Sidewalk Width'),
     ('ScoreCompliance', 'Compliance Score'),
+    ('ScoreSurfaceCondition', 'Condition Issue'),
+    ('ScoreVerticalFaultCount', 'Vertical Faults per Mile'),
+    ('ScoreCrackedPanelCount', 'Percent Cracked Panels'),
+    ('ScoreCondition', 'Condition Score'),
 ]
 
 CURB_RAMP_FIELDS = [
@@ -29,6 +33,10 @@ CURB_RAMP_FIELDS = [
     ('ScoreLargestPavementFault', 'Largest Vertical Fault'),
     ('ScoreObstruction', 'Presence of Obstruction'),
     ('ScoreCompliance', 'Compliance Score'),
+    ('ScoreSurfaceCondition', 'Condition Issue'),
+    ('ScorePavementFaultCount', 'Vertical Faults'),
+    ('ScoreCrackedPanelCount', 'Cracked Panels'),
+    ('ScoreCondition', 'Condition Score'),
 ]
 
 CROSSWALK_FIELDS = [
@@ -95,7 +103,7 @@ def feature_table(query_set, summary_field, column_label, feature_label):
 
     return results
 
-def sidewalk_table(query_set, summary_field, column_label, feature_label):
+def sidewalk_table(query_set, summary_field, column_label):
     levels = query_set.summarize(
         summary_field, length='Shape.getLength("PLANAR", "MILES")')
     total_length = sum([l['length'] for l in levels])
@@ -105,12 +113,18 @@ def sidewalk_table(query_set, summary_field, column_label, feature_label):
     ]
 
     for level in levels:
+        if is_hidden(level):
+            continue
+
         results.append([
             level['label'],
             str(level['value']),
             '{:.1f}'.format(level['length']),
             '{:.1f} %'.format(100*level['length']/total_length),
         ])
+
+    if all(l['value'] is None for l in levels):
+        results = [r[:1] + r[2:] for r in results]
 
     return results
 
@@ -170,21 +184,25 @@ results = {
 }
 
 # Create sidewalk tables.
+print 'Creating sidewalk summary tables...'
 ss = SidewalkSegment.objects.filter(SummaryCount=1)
 for (field, label) in SIDEWALK_SEGMENT_FIELDS:
     results['Sidewalk'][field] = sidewalk_table(ss, field, label)
 
 # Create curb ramp tables.
+print 'Creating curb ramp summary tables...'
 cr = CurbRamp.objects.filter(QAStatus=D('Complete')).exclude(RampType=D('None'))
 for (field, label) in CURB_RAMP_FIELDS:
     results['CurbRamp'][field] = feature_table(cr, field, label, 'Curb Ramps')
 
 # Create crosswalk tables.
+print 'Creating crosswalk summary tables...'
 cw = Crosswalk.objects.filter(QAStatus=D('Complete'))
 for (field, label) in CROSSWALK_FIELDS:
     results['Crosswalk'][field] = feature_table(cw, field, label, 'Crosswalks')
 
 # Create crosswalk tables.
+print 'Creating pedestrian signal summary tables...'
 ps = PedestrianSignal.objects.filter(QAStatus=D('Complete'))
 for (field, label) in PEDESTRIAN_SIGNAL_FIELDS:
     results['PedestrianSignal'][field] = feature_table(

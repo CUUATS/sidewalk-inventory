@@ -372,6 +372,7 @@ class SidewalkSegment(BaseFeature):
     ScoreCondition = WeightsField(
         'Condition Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreSurfaceCondition': 0.334,
             'ScoreVerticalFaultCount': 0.333,
@@ -908,6 +909,7 @@ class CurbRamp(InventoryFeature):
     ScoreCondition = WeightsField(
         'Condition Score',
         condition='self.qa_complete and self.has_ramp',
+        scale=SCORE_SCALE,
         weights={
             'ScoreSurfaceCondition': 0.334,
             'ScorePavementFaultCount': 0.333,
