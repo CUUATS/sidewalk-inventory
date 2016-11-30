@@ -34,7 +34,7 @@ RAMP_RUNNING_SLOPE_SCALE = BreaksScale([8.3, 9.3, 10.3], [
 ], True)
 
 RAMP_RUNNING_SLOPE_MIN_SCALE = StaticScale(
-    L(100, 'Running slope is 5.0 % or less'))
+    L(100, 'Running slope is 5.0 % or less', exclude=True))
 
 TRUNCATED_DOMES = L(100, 'Truncated domes', 1)
 NO_DWS = L(0, 'None', 4)
@@ -75,6 +75,8 @@ LANDING_DIMENSIONS_SCALE = BreaksScale([24, 30, 36, 42, 48], [
 ], False)
 
 NO_LANDING_SCALE = StaticScale(L(0, 'No landing'))
+UPPER_RAMP_SCALE = StaticScale(L(
+    100, 'Ramp not adjacent to the street', exclude=True))
 
 VERTICAL_FAULT_COMPLIANT = L(100, 'Less than 1/4 inch, or beveled', 1)
 LARGEST_VFAULT_SCALE = DictScale({
@@ -722,8 +724,7 @@ class CurbRamp(InventoryFeature):
         scale=(
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(
-                L(100, 'Ramp not adjacent to the street')), 3),
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 3),
             ('self.has_dws', DWS_TYPE_SCALE, 1),
             ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
@@ -736,8 +737,7 @@ class CurbRamp(InventoryFeature):
         scale=(
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(
-                L(100, 'Ramp not adjacent to the street')), 3),
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 3),
             ('self.has_dws', DWS_WIDTH_SCALE, 1),
             ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
@@ -745,13 +745,19 @@ class CurbRamp(InventoryFeature):
 
     ScoreGutterCrossSlope = ScaleField(
         'Gutter Cross Slope Score',
-        scale=CROSS_SLOPE_SCALE,
+        scale=(
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 2),
+            ('self.has_gutter', CROSS_SLOPE_SCALE, 1),
+        ),
         condition='self.qa_complete and self.has_ramp',
         value_field='GutterCrossSlope')
 
     ScoreGutterRunningSlope = ScaleField(
         'Gutter Running Slope Score',
-        scale=GUTTER_RUNNING_SLOPE_SCALE,
+        scale=(
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 2),
+            ('self.has_gutter', GUTTER_RUNNING_SLOPE_SCALE, 1),
+        ),
         condition='self.qa_complete and self.has_ramp',
         value_field='GutterRunningSlope')
 
@@ -780,7 +786,7 @@ class CurbRamp(InventoryFeature):
         scale=(
             ('self.approach_count > 0', CROSS_SLOPE_SCALE, 1),
             ('self.approach_count == 0', StaticScale(
-                L(100, 'No approaches')), 2),
+                L(100, 'No approaches', exclude=True)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LeftApproachCrossSlope, RightApproachCrossSlope)')
@@ -789,7 +795,8 @@ class CurbRamp(InventoryFeature):
         'Flare Slope Score',
         scale=(
             ('self.has_flares', FLARE_SLOPE_SCALE, 1),
-            ('not self.has_flares', StaticScale(L(100, 'No flares')), 2),
+            ('not self.has_flares', StaticScale(
+                L(100, 'No flares', exclude=True)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='FlareSlope')
