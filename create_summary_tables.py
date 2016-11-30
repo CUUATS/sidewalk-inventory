@@ -6,6 +6,14 @@ from cuuats.datamodel import D
 from datamodel import CurbRamp, Crosswalk, PedestrianSignal, SidewalkSegment
 from debug import CR_PATH, CW_PATH, PS_PATH, SS_PATH
 
+SIDEWALK_SEGMENT_FIELDS = [
+    ('ScoreMaxCrossSlope', 'Maximum Cross Slope'),
+    ('ScoreLargestVerticalFault', 'Largest Vertical Fault'),
+    ('ScoreObstructionTypes', 'Number of Obstruction Types'),
+    ('ScoreWidth', 'Minimum Sidewalk Width'),
+    ('ScoreCompliance', 'Compliance Score'),
+]
+
 CURB_RAMP_FIELDS = [
     ('ScoreRampWidth', 'Ramp Width'),
     ('ScoreRampCrossSlope', 'Cross Slope'),
@@ -23,26 +31,21 @@ CURB_RAMP_FIELDS = [
     ('ScoreCompliance', 'Compliance Score'),
 ]
 
-SIDEWALK_SEGMENT_FIELDS = [
-    ('ScoreMaxCrossSlope', 'Maximum Cross Slope'),
-    ('ScoreLargestVerticalFault', 'Largest Vertical Fault'),
-    ('ScoreObstructionTypes', 'Number of Obstruction Types'),
-    ('ScoreWidth', 'Minimum Sidewalk Width'),
+CROSSWALK_FIELDS = [
+    ('ScoreWidth', 'Crosswalk Width'),
+    ('ScoreCrossSlope', 'Cross Slope'),
     ('ScoreCompliance', 'Compliance Score'),
 ]
 
+def is_excluded(level):
+    return ('exclude' in level and level['exclude'])
+
+def is_hidden(level):
+    return ('hidden' in level and level['hidden'])
+
 def feature_table(query_set, summary_field, column_label, feature_label):
     levels = query_set.summarize(summary_field)
-
-    # Scores are always arranged in descending order. If there's a score of 100
-    # at the bottom of the list, it is an exclusion that shouldn't be counted
-    # in the total.
-    last_score = 100
-    for level in levels:
-        level['exclusion'] = level['value'] > last_score
-        last_score = level['value']
-
-    total = sum([l['count'] for l in levels if not l['exclusion']])
+    total = sum([l['count'] for l in levels if not is_excluded(l)])
 
     results = [
         [
@@ -54,8 +57,11 @@ def feature_table(query_set, summary_field, column_label, feature_label):
     ]
 
     for level in levels:
+        if is_hidden(level):
+            continue
+
         percent = unichr(2014)
-        if not level['exclusion']:
+        if not is_excluded(level):
             percent = '{:.1f} %'.format(100*float(level['count'])/total)
 
         results.append([
@@ -119,15 +125,20 @@ results = {
     'PedestrianSignal': {}
 }
 
+# Create sidewalk tables.
+ss = SidewalkSegment.objects.filter(SummaryCount=1)
+for (field, label) in SIDEWALK_SEGMENT_FIELDS:
+    results['Sidewalk'][field] = sidewalk_table(ss, field, label)
+
 # Create curb ramp tables.
 cr = CurbRamp.objects.filter(QAStatus=D('Complete')).exclude(RampType=D('None'))
 for (field, label) in CURB_RAMP_FIELDS:
     results['CurbRamp'][field] = feature_table(cr, field, label, 'Curb Ramps')
 
-# # Create sidewalk tables.
-# ss = SidewalkSegment.objects.filter(SummaryCount=1)
-# for (field, label) in SIDEWALK_SEGMENT_FIELDS:
-#     results['Sidewalk'][field] = sidewalk_table(ss, field, label)
+# Create crosswalk tables.
+cw = Crosswalk.objects.filter(QAStatus=D('Complete'))
+for (field, label) in CROSSWALK_FIELDS:
+    results['Crosswalk'][field] = feature_table(cw, field, label, 'Crosswalks')
 
 # Create the output file or files.
 if args.format == 'json':

@@ -5,90 +5,89 @@ Sidewalk Inventory and Assessment data model.
 from cuuats.datamodel import D, BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, ForeignKey, ScaleField, \
     WeightsField, MethodField, BreaksScale, DictScale, StaticScale, \
-    ScaleLevel
+    ScaleLevel as L
 
 # Scales
 WIDTH_SCALE = BreaksScale([36, 39, 42, 45, 48], [
-    ScaleLevel(0, '35 inches or less', 6),
-    ScaleLevel(20, '36 to 38 inches', 5),
-    ScaleLevel(40, '39 to 41 inches', 4),
-    ScaleLevel(60, '42 to 44 inches', 3),
-    ScaleLevel(80, '45 to 47 inches', 2),
-    ScaleLevel(100, '48 inches or more', 1),
+    L(0, '35 inches or less', 6),
+    L(20, '36 to 38 inches', 5),
+    L(40, '39 to 41 inches', 4),
+    L(60, '42 to 44 inches', 3),
+    L(80, '45 to 47 inches', 2),
+    L(100, '48 inches or more', 1),
 ], False)
 
 CROSS_SLOPE_SCALE = BreaksScale([2, 4, 6, 8, 10], [
-    ScaleLevel(100, '2 % or less', 1),
-    ScaleLevel(80, '2.1 % to 4.0 %', 2),
-    ScaleLevel(60, '4.1 % to 6.0 %', 3),
-    ScaleLevel(40, '6.1 % to 8.0 %', 4),
-    ScaleLevel(20, '8.1 % to 10.0 %', 5),
-    ScaleLevel(0, '10.1 % or more', 6),
+    L(100, '2 % or less', 1),
+    L(80, '2.1 % to 4.0 %', 2),
+    L(60, '4.1 % to 6.0 %', 3),
+    L(40, '6.1 % to 8.0 %', 4),
+    L(20, '8.1 % to 10.0 %', 5),
+    L(0, '10.1 % or more', 6),
 ], True)
 
 RAMP_RUNNING_SLOPE_SCALE = BreaksScale([8.3, 9.3, 10.3], [
-    ScaleLevel(100, '8.3 % or less', 1),
-    ScaleLevel(67, '8.4 % to 9.3 %', 2),
-    ScaleLevel(33, '9.4 % to 10.3 %', 3),
-    ScaleLevel(0, '10.4 % or more', 4),
+    L(100, '8.3 % or less', 1),
+    L(67, '8.4 % to 9.3 %', 2),
+    L(33, '9.4 % to 10.3 %', 3),
+    L(0, '10.4 % or more', 4),
 ], True)
 
 RAMP_RUNNING_SLOPE_MIN_SCALE = StaticScale(
-    ScaleLevel(100, 'Running slope is 5.0 % or less', 1))
+    L(100, 'Running slope is 5.0 % or less'))
 
-TRUNCATED_DOMES = ScaleLevel(100, 'Truncated domes', 1)
-NO_DWS = ScaleLevel(0, 'None', 4)
+TRUNCATED_DOMES = L(100, 'Truncated domes', 1)
+NO_DWS = L(0, 'None', 4)
 DWS_TYPE_SCALE = DictScale({
     'Truncated Domes - YELLOW': TRUNCATED_DOMES,
     'Truncated Domes - RED': TRUNCATED_DOMES,
     'Truncated Domes - OTHER': TRUNCATED_DOMES,
-    'Pavement Grooves': ScaleLevel(50, 'Pavement grooves', 2),
-    'Other': ScaleLevel(50, 'Other', 3),
+    'Pavement Grooves': L(50, 'Pavement grooves', 2),
+    'Other': L(50, 'Other', 3),
     'None': NO_DWS,
     'N/A': NO_DWS,
 })
 
 DWS_WIDTH_SCALE = BreaksScale([0.7, 0.8, 0.9, 1], [
-    ScaleLevel(20, '69 % or less', 5),
-    ScaleLevel(40, '70 % to 79 %', 4),
-    ScaleLevel(60, '80 % to 89 %', 3),
-    ScaleLevel(80, '90 % to 99 %', 2),
-    ScaleLevel(100, '100 %', 1),
+    L(20, '69 % or less', 5),
+    L(40, '70 % to 79 %', 4),
+    L(60, '80 % to 89 %', 3),
+    L(80, '90 % to 99 %', 2),
+    L(100, '100 %', 1),
 ], False)
 
 GUTTER_RUNNING_SLOPE_SCALE = BreaksScale([5, 7, 9, 11, 13], [
-    ScaleLevel(100, '5.0 % or less', 1),
-    ScaleLevel(80, '5.1 % to 7.0 %', 2),
-    ScaleLevel(60, '7.1 % to 9.0 %', 3),
-    ScaleLevel(40, '9.1 % to 11.0 %', 4),
-    ScaleLevel(20, '11.1 % to 13.0 %', 5),
-    ScaleLevel(0, '13.1 % or more', 6),
+    L(100, '5.0 % or less', 1),
+    L(80, '5.1 % to 7.0 %', 2),
+    L(60, '7.1 % to 9.0 %', 3),
+    L(40, '9.1 % to 11.0 %', 4),
+    L(20, '11.1 % to 13.0 %', 5),
+    L(0, '13.1 % or more', 6),
 ], True)
 
 LANDING_DIMENSIONS_SCALE = BreaksScale([24, 30, 36, 42, 48], [
-    ScaleLevel(0, 'Less than 24 inches', 6),
-    ScaleLevel(20, '24 to 29 inches', 5),
-    ScaleLevel(40, '30 to 35 inches', 4),
-    ScaleLevel(60, '36 to 41 inches', 3),
-    ScaleLevel(80, '42 to 47 inches', 2),
-    ScaleLevel(100, '48 inches or more', 1),
+    L(0, 'Less than 24 inches', 6),
+    L(20, '24 to 29 inches', 5),
+    L(40, '30 to 35 inches', 4),
+    L(60, '36 to 41 inches', 3),
+    L(80, '42 to 47 inches', 2),
+    L(100, '48 inches or more', 1),
 ], False)
 
-NO_LANDING_SCALE = StaticScale(
-    ScaleLevel(0, 'No landing', 1))
+NO_LANDING_SCALE = StaticScale(L(0, 'No landing'))
 
-VERTICAL_FAULT_COMPLIANT = ScaleLevel(100, 'Less than 1/4 inch, or beveled', 1)
+VERTICAL_FAULT_COMPLIANT = L(100, 'Less than 1/4 inch, or beveled', 1)
 LARGEST_VFAULT_SCALE = DictScale({
-    'Over 0.50 inch': ScaleLevel(0, 'More than 1/2 inch', 3),
+    'Over 0.50 inch': L(0, 'More than 1/2 inch', 3),
     'Between 0.25 and 0.50 inch, no bevel':
-        ScaleLevel(50, '1/4 inch to 1/2 inch, not beveled', 2),
+        L(50, '1/4 inch to 1/2 inch, not beveled', 2),
     'All vertical discontinuities compliant': VERTICAL_FAULT_COMPLIANT,
     'None': VERTICAL_FAULT_COMPLIANT,
     'N/A': VERTICAL_FAULT_COMPLIANT,
 })
 
-NO_OBSTRUCTION = ScaleLevel(100, 'No obstructions present', 1)
-HAS_OBSTRUCTION = ScaleLevel(0, 'Obstructions present', 2)
+NO_OBSTRUCTION = L(100, 'No obstructions present', 1)
+HAS_OBSTRUCTION = L(0, 'Obstructions present', 2)
 OBSTRUCTION_SCALE = DictScale({
     'Pole or signpost': HAS_OBSTRUCTION,
     'Hydrant': HAS_OBSTRUCTION,
@@ -102,96 +101,96 @@ OBSTRUCTION_SCALE = DictScale({
 })
 
 FLARE_SLOPE_SCALE = BreaksScale([10, 12, 14, 16, 18], [
-    ScaleLevel(100, '10.0 % or less', 1),
-    ScaleLevel(80, '10.1 % to 12.0 %', 2),
-    ScaleLevel(60, '12.1 % to 14.0 %', 3),
-    ScaleLevel(40, '14.1 % to 16.0 %', 4),
-    ScaleLevel(20, '16.1 % to 18.0 %', 5),
-    ScaleLevel(0, '18.1 % or more', 6),
+    L(100, '10.0 % or less', 1),
+    L(80, '10.1 % to 12.0 %', 2),
+    L(60, '12.1 % to 14.0 %', 3),
+    L(40, '14.1 % to 16.0 %', 4),
+    L(20, '16.1 % to 18.0 %', 5),
+    L(0, '18.1 % or more', 6),
 ], True)
 
-NO_CONDITION_ISSUE = ScaleLevel(100, 'None', 1)
+NO_CONDITION_ISSUE = L(100, 'None', 1)
 SURFACE_CONDITION_SCALE = DictScale({
-    'Spalled': ScaleLevel(20, 'Spalling', 6),
-    'Grass': ScaleLevel(40, 'Grass', 5),
-    'Dirt': ScaleLevel(60, 'Dirt', 4),
-    'Cracked': ScaleLevel(80, 'Cracking', 3),
-    'Other': ScaleLevel(80, 'Other condition issue', 2),
+    'Spalled': L(20, 'Spalling', 6),
+    'Grass': L(40, 'Grass', 5),
+    'Dirt': L(60, 'Dirt', 4),
+    'Cracked': L(80, 'Cracking', 3),
+    'Other': L(80, 'Other condition issue', 2),
     'N/A': NO_CONDITION_ISSUE,
     'None': NO_CONDITION_ISSUE,
 })
 
 SIDEWALK_VERTICAL_FAULT_COUNT_SCALE = BreaksScale([50, 100, 150, 200], [
-    ScaleLevel(100, '49 or fewer', 1),
-    ScaleLevel(80, '50  to 99', 2),
-    ScaleLevel(60, '100 to 149', 3),
-    ScaleLevel(40, '150 to 199', 4),
-    ScaleLevel(20, '200 or more', 5),
+    L(100, '49 or fewer', 1),
+    L(80, '50  to 99', 2),
+    L(60, '100 to 149', 3),
+    L(40, '150 to 199', 4),
+    L(20, '200 or more', 5),
 ], False)
 
 CURB_RAMP_VERTICAL_FAULT_COUNT_SCALE = BreaksScale([0, 1, 2, 3], [
-    ScaleLevel(100, '0', 1),
-    ScaleLevel(80, '1', 2),
-    ScaleLevel(60, '2', 3),
-    ScaleLevel(40, '3', 4),
-    ScaleLevel(20, '4 or more', 5),
+    L(100, '0', 1),
+    L(80, '1', 2),
+    L(60, '2', 3),
+    L(40, '3', 4),
+    L(20, '4 or more', 5),
 ], True)
 
 SIDEWALK_CRACKED_PANEL_SCALE = BreaksScale([0.025, 0.05, 0.075, 0.1], [
-    ScaleLevel(100, '2.4 % or less', 1),
-    ScaleLevel(80, '2.5 % to 4.9 %', 2),
-    ScaleLevel(60, '5.0 % to 7.4 %', 3),
-    ScaleLevel(40, '7.5 % to 9.9 %', 4),
-    ScaleLevel(20, '10.0 % or greater', 5),
+    L(100, '2.4 % or less', 1),
+    L(80, '2.5 % to 4.9 %', 2),
+    L(60, '5.0 % to 7.4 %', 3),
+    L(40, '7.5 % to 9.9 %', 4),
+    L(20, '10.0 % or greater', 5),
 ], False)
 
 CURB_RAMP_CRACKED_PANEL_SCALE = BreaksScale([0, 1, 2, 3], [
-    ScaleLevel(100, '0', 1),
-    ScaleLevel(80, '1', 2),
-    ScaleLevel(60, '2', 3),
-    ScaleLevel(40, '3', 4),
-    ScaleLevel(20, '4 or more', 5),
+    L(100, '0', 1),
+    L(80, '1', 2),
+    L(60, '2', 3),
+    L(40, '3', 4),
+    L(20, '4 or more', 5),
 ], True)
 
 OBSTRUCTION_TYPES_SCALE = BreaksScale([0, 1], [
-    ScaleLevel(100, 'No obstructions present', 1),
-    ScaleLevel(50, 'One type present', 2),
-    ScaleLevel(0, 'Two or more types present', 3),
+    L(100, 'No obstructions present', 1),
+    L(50, 'One type present', 2),
+    L(0, 'Two or more types present', 3),
 ], True)
 
 SCORE_BUTTON_HEIGHT = BreaksScale([5, 10, 15, 49, 54, 59], [
-    ScaleLevel(0, '4 inches or less', 1),
-    ScaleLevel(20, '5 to 9 inches', 2),
-    ScaleLevel(60, '10 to 14 inches', 3),
-    ScaleLevel(100, '15 to 48 inches', 4),
-    ScaleLevel(60, '49 to 53 inches', 5),
-    ScaleLevel(20, '54 to 58 inches', 6),
-    ScaleLevel(0, '59 inches or greater', 7),
+    L(0, '4 inches or less', 1),
+    L(20, '5 to 9 inches', 2),
+    L(60, '10 to 14 inches', 3),
+    L(100, '15 to 48 inches', 4),
+    L(60, '49 to 53 inches', 5),
+    L(20, '54 to 58 inches', 6),
+    L(0, '59 inches or greater', 7),
 ], True)
 
 SCORE_BUTTON_SIZE = DictScale({
-    'Very Small - < 1/2 inch': ScaleLevel(33, '0.4 inches or less', 3),
-    'Medium - roughly 1 inch': ScaleLevel(67, '0.5 to 1.9 inches', 2),
-    'Accessible - 2 inches or greater': ScaleLevel(
+    'Very Small - < 1/2 inch': L(33, '0.4 inches or less', 3),
+    'Medium - roughly 1 inch': L(67, '0.5 to 1.9 inches', 2),
+    'Accessible - 2 inches or greater': L(
         100, '2 inches or greater', 1),
 })
 
 CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale([5, 6, 7, 8, 9], [
-    ScaleLevel(100, '5.0 % or less', 1),
-    ScaleLevel(80, '5.1 % to 6.0 %', 2),
-    ScaleLevel(60, '6.1 % to 7.0 %', 3),
-    ScaleLevel(40, '7.1 % to 8.0 %', 4),
-    ScaleLevel(20, '8.1 % to 9.0 %', 5),
-    ScaleLevel(0, '9.1 % or more', 6),
+    L(100, '5.0 % or less', 1),
+    L(80, '5.1 % to 6.0 %', 2),
+    L(60, '6.1 % to 7.0 %', 3),
+    L(40, '7.1 % to 8.0 %', 4),
+    L(20, '8.1 % to 9.0 %', 5),
+    L(0, '9.1 % or more', 6),
 ], True)
 
 SCORE_SCALE = BreaksScale([60, 70, 80, 90, 100], [
-    ScaleLevel(None, '60 or less', 6),
-    ScaleLevel(None, '> 60 to 70', 5),
-    ScaleLevel(None, '> 70 to 80', 4),
-    ScaleLevel(None, '> 80 to 90', 3),
-    ScaleLevel(None, '> 90 to 100', 2),
-    ScaleLevel(None, 'Invalid score', 1),
+    L(None, '60 or less', 6),
+    L(None, '> 60 to 70', 5),
+    L(None, '> 70 to 80', 4),
+    L(None, '> 80 to 90', 3),
+    L(None, '> 90 to 100', 2),
+    L(None, 'Invalid score', 1, hidden=True),
 ], True)
 
 
@@ -712,7 +711,7 @@ class CurbRamp(InventoryFeature):
         condition='self.qa_complete and self.has_ramp',
         scale=(
             ('self.RampLength > 15*12', StaticScale(
-                ScaleLevel(100, 'Ramp length > 15 feet', 1)), 2),
+                L(100, 'Ramp length > 15 feet')), 2),
             ('self.RampLength <= 15*12', RAMP_RUNNING_SLOPE_SCALE, 1),
         ),
         value_field='RampRunningSlope')
@@ -724,10 +723,9 @@ class CurbRamp(InventoryFeature):
             # Detectable warnings are only required on ramps adjacent
             # to the street.
             ('not self.has_gutter', StaticScale(
-                ScaleLevel(100, 'Ramp not adjacent to the street', 1)), 3),
+                L(100, 'Ramp not adjacent to the street')), 3),
             ('self.has_dws', DWS_TYPE_SCALE, 1),
-            ('not self.has_dws', StaticScale(
-                ScaleLevel(0, 'None', 1)), 2),
+            ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
         use_description=True,
         value_field='DetectableWarningType')
@@ -739,10 +737,9 @@ class CurbRamp(InventoryFeature):
             # Detectable warnings are only required on ramps adjacent
             # to the street.
             ('not self.has_gutter', StaticScale(
-                ScaleLevel(100, 'Ramp not adjacent to the street', 1)), 3),
+                L(100, 'Ramp not adjacent to the street')), 3),
             ('self.has_dws', DWS_WIDTH_SCALE, 1),
-            ('not self.has_dws', StaticScale(
-                ScaleLevel(0, 'None', 1)), 2),
+            ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
         value_field='self.dws_coverage')
 
@@ -783,7 +780,7 @@ class CurbRamp(InventoryFeature):
         scale=(
             ('self.approach_count > 0', CROSS_SLOPE_SCALE, 1),
             ('self.approach_count == 0', StaticScale(
-                ScaleLevel(100, 'No approaches', 1)), 2),
+                L(100, 'No approaches')), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LeftApproachCrossSlope, RightApproachCrossSlope)')
@@ -792,8 +789,7 @@ class CurbRamp(InventoryFeature):
         'Flare Slope Score',
         scale=(
             ('self.has_flares', FLARE_SLOPE_SCALE, 1),
-            ('not self.has_flares', StaticScale(
-                ScaleLevel(100, 'No flares', 1)), 2),
+            ('not self.has_flares', StaticScale(L(100, 'No flares')), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='FlareSlope')
@@ -1062,8 +1058,9 @@ class Crosswalk(InventoryFeature):
         'Width Score',
         condition='self.qa_complete',
         scale=(
-            ('self.has_width', WIDTH_SCALE),
-            ('not self.has_width', StaticScale(100)),
+            ('self.has_width', WIDTH_SCALE, 1),
+            ('not self.has_width', StaticScale(
+                L(100, 'No painted markings', exclude=True)), 2),
         ),
         value_field='Width')
 
@@ -1071,16 +1068,18 @@ class Crosswalk(InventoryFeature):
         'Cross Slope Score',
         condition='self.qa_complete',
         scale=(
-            ('self.is_midblock', StaticScale(100)),
-            ('self.is_stop_controlled', CROSS_SLOPE_SCALE),
+            ('self.is_midblock', StaticScale(
+                L(100, 'Midblock crossing', exclude=True)), 3),
+            ('self.is_stop_controlled', CROSS_SLOPE_SCALE, 1),
             ('not self.is_stop_controlled',
-             CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE),
+             CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE, 2),
         ),
         value_field='CrossSlope')
 
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreWidth': 0.5,
             'ScoreCrossSlope': 0.5,
