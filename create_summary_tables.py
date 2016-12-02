@@ -41,7 +41,7 @@ CURB_RAMP_FIELDS = [
 
 CROSSWALK_FIELDS = [
     ('ScoreWidth', 'Crosswalk Width'),
-    ('ScoreCrossSlope', 'Cross Slope'),
+    ('ScoreCrossSlope', ['Stop-Controlled', 'Uncontrolled']),
     ('ScoreCompliance', 'Compliance Score'),
 ]
 
@@ -70,13 +70,49 @@ def is_excluded(level):
 def is_hidden(level):
     return ('hidden' in level and level['hidden'])
 
-def feature_table(query_set, summary_field, column_label, feature_label):
+def merge_levels(levels, groups):
+    included = [l for l in levels if not is_excluded(l)]
+    excluded = [l for l in levels if is_excluded(l)]
+
+    assert len(included) % groups == 0
+
+    size = len(levels) / groups
+    columns = [included[(size*i):(size*(i+1))] for i in xrange(groups)]
+    new_levels = []
+
+    for row in zip(*columns):
+        new_level = {
+            'value': row[0]['value'],
+            'count': sum([l['count'] for l in row]),
+            'label': [l['label'] for l in row],
+        }
+
+        for key in row[0].keys():
+            if not key in new_level:
+                new_level[key] = sum([l[key] for l in row])
+
+        new_levels.append(new_level)
+
+    for level in excluded:
+        new_level = {}
+        new_level.update(level)
+        new_level['label'] = [level['label']] + ([''] * (groups - 1))
+        new_levels.append(new_level)
+
+    return new_levels
+
+def feature_table(query_set, summary_field, column_labels, feature_label):
     levels = query_set.summarize(summary_field)
     total = sum([l['count'] for l in levels if not is_excluded(l)])
 
+    if not isinstance(column_labels, (list, tuple)):
+        column_labels = [column_labels]
+
+    if len(column_labels) > 1:
+        levels = merge_levels(levels, len(column_labels))
+
     results = [
-        [
-            column_label,
+        column_labels + [
             'Score',
             feature_label,
             'Percent of %s' % (feature_label,),
@@ -91,8 +127,11 @@ def feature_table(query_set, summary_field, column_label, feature_label):
         if not is_excluded(level):
             percent = '{:.1f} %'.format(100*float(level['count'])/total)
 
-        results.append([
-            level['label'],
+        label = level['label']
+        if not isinstance(label, (list, tuple)):
+            label = [label]
+
+        results.append(label + [
             str(level['value']),
             '{:,d}'.format(level['count']),
             percent,
@@ -201,7 +240,7 @@ cw = Crosswalk.objects.filter(QAStatus=D('Complete'))
 for (field, label) in CROSSWALK_FIELDS:
     results['Crosswalk'][field] = feature_table(cw, field, label, 'Crosswalks')
 
-# Create crosswalk tables.
+# Create pedestrian signal tables.
 print 'Creating pedestrian signal summary tables...'
 ps = PedestrianSignal.objects.filter(QAStatus=D('Complete'))
 for (field, label) in PEDESTRIAN_SIGNAL_FIELDS:
