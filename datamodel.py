@@ -4,99 +4,198 @@ Sidewalk Inventory and Assessment data model.
 
 from cuuats.datamodel import D, BaseFeature, OIDField, GeometryField, \
     NumericField, StringField, GlobalIDField, ForeignKey, ScaleField, \
-    WeightsField, MethodField, BreaksScale, DictScale, StaticScale
+    WeightsField, MethodField, BreaksScale, DictScale, StaticScale, \
+    ScaleLevel as L
 
 # Scales
-WIDTH_SCALE = BreaksScale(
-    [36, 39, 42, 45, 48], [0, 20, 40, 60, 80, 100], False)
+WIDTH_SCALE = BreaksScale([36, 39, 42, 45, 48], [
+    L(0, '35 inches or less', 6),
+    L(20, '36 to 38 inches', 5),
+    L(40, '39 to 41 inches', 4),
+    L(60, '42 to 44 inches', 3),
+    L(80, '45 to 47 inches', 2),
+    L(100, '48 inches or more', 1),
+], False)
 
-IN_MEDIAN_WIDTH_SCALE = BreaksScale(
-    [48, 51, 54, 57, 60], [0, 20, 40, 60, 80, 100], False)
+CROSS_SLOPE_SCALE = BreaksScale([2, 4, 6, 8, 10], [
+    L(100, '2 % or less', 1),
+    L(80, '2.1 % to 4.0 %', 2),
+    L(60, '4.1 % to 6.0 %', 3),
+    L(40, '6.1 % to 8.0 %', 4),
+    L(20, '8.1 % to 10.0 %', 5),
+    L(0, '10.1 % or more', 6),
+], True)
 
-CROSS_SLOPE_SCALE = BreaksScale(
-    [2, 4, 6, 8, 10], [100, 80, 60, 40, 20, 0], True)
+RAMP_RUNNING_SLOPE_SCALE = BreaksScale([8.3, 9.3, 10.3], [
+    L(100, '8.3 % or less', 1),
+    L(67, '8.4 % to 9.3 %', 2),
+    L(33, '9.4 % to 10.3 %', 3),
+    L(0, '10.4 % or more', 4),
+], True)
 
-RAMP_RUNNING_SLOPE_SCALE = BreaksScale(
-    [8.3, 9.3, 10.3], [100, 67, 33, 0], True)
+RAMP_RUNNING_SLOPE_MIN_SCALE = StaticScale(
+    L(100, 'Running slope is 5.0 % or less', exclude=True))
 
+TRUNCATED_DOMES = L(100, 'Truncated domes', 1)
+NO_DWS = L(0, 'None', 4)
 DWS_TYPE_SCALE = DictScale({
-    'Truncated Domes - YELLOW': 100,
-    'Truncated Domes - RED': 100,
-    'Truncated Domes - OTHER': 100,
-    'Pavement Grooves': 50,
-    'Other': 50,
-    'None': 0,
-    'N/A': 0,
+    'Truncated Domes - YELLOW': TRUNCATED_DOMES,
+    'Truncated Domes - RED': TRUNCATED_DOMES,
+    'Truncated Domes - OTHER': TRUNCATED_DOMES,
+    'Pavement Grooves': L(50, 'Pavement grooves', 2),
+    'Other': L(50, 'Other', 3),
+    'None': NO_DWS,
+    'N/A': NO_DWS,
 })
 
-DWS_WIDTH_SCALE = BreaksScale(
-    [0.7, 0.8, 0.9, 1], [20, 40, 60, 80, 100], False)
+DWS_WIDTH_SCALE = BreaksScale([0.7, 0.8, 0.9, 1], [
+    L(20, '69 % or less', 5),
+    L(40, '70 % to 79 %', 4),
+    L(60, '80 % to 89 %', 3),
+    L(80, '90 % to 99 %', 2),
+    L(100, '100 %', 1),
+], False)
 
-GUTTER_RUNNING_SLOPE_SCALE = BreaksScale(
-    [5, 7, 9, 11, 13], [100, 80, 60, 40, 20, 0], True)
+GUTTER_RUNNING_SLOPE_SCALE = BreaksScale([5, 7, 9, 11, 13], [
+    L(100, '5.0 % or less', 1),
+    L(80, '5.1 % to 7.0 %', 2),
+    L(60, '7.1 % to 9.0 %', 3),
+    L(40, '9.1 % to 11.0 %', 4),
+    L(20, '11.1 % to 13.0 %', 5),
+    L(0, '13.1 % or more', 6),
+], True)
 
-LANDING_DIMENSIONS_SCALE = BreaksScale(
-    [24, 30, 36, 42, 48], [0, 20, 40, 60, 80, 100], False)
+LANDING_DIMENSIONS_SCALE = BreaksScale([24, 30, 36, 42, 48], [
+    L(0, 'Less than 24 inches', 6),
+    L(20, '24 to 29 inches', 5),
+    L(40, '30 to 35 inches', 4),
+    L(60, '36 to 41 inches', 3),
+    L(80, '42 to 47 inches', 2),
+    L(100, '48 inches or more', 1),
+], False)
 
+NO_LANDING_SCALE = StaticScale(L(0, 'No landing'))
+UPPER_RAMP_SCALE = StaticScale(L(
+    100, 'Ramp not adjacent to the street', exclude=True))
+
+VERTICAL_FAULT_COMPLIANT = L(100, 'Less than 1/4 inch, or beveled', 1)
 LARGEST_VFAULT_SCALE = DictScale({
-    'Over 0.50 inch': 0,
-    'Between 0.25 and 0.50 inch, no bevel': 50,
-    'All vertical discontinuities compliant': 100,
-    'None': 100,
-    'N/A': 100,
+    'Over 0.50 inch': L(0, 'More than 1/2 inch', 3),
+    'Between 0.25 and 0.50 inch, no bevel':
+        L(50, '1/4 inch to 1/2 inch, not beveled', 2),
+    'All vertical discontinuities compliant': VERTICAL_FAULT_COMPLIANT,
+    'None': VERTICAL_FAULT_COMPLIANT,
+    'N/A': VERTICAL_FAULT_COMPLIANT,
 })
 
+NO_OBSTRUCTION = L(100, 'No obstructions present', 1)
+HAS_OBSTRUCTION = L(0, 'Obstructions present', 2)
 OBSTRUCTION_SCALE = DictScale({
-    'Pole or signpost': 0,
-    'Hydrant': 0,
-    'Bollard': 0,
-    'Grate': 0,
-    'Tree roots': 0,
-    'Tree trunk or other vegetation': 0,
-    'Other': 0,
-    'None': 100,
-    'N/A': 100,
+    'Pole or signpost': HAS_OBSTRUCTION,
+    'Hydrant': HAS_OBSTRUCTION,
+    'Bollard': HAS_OBSTRUCTION,
+    'Grate': HAS_OBSTRUCTION,
+    'Tree roots': HAS_OBSTRUCTION,
+    'Tree trunk or other vegetation': HAS_OBSTRUCTION,
+    'Other': HAS_OBSTRUCTION,
+    'None': NO_OBSTRUCTION,
+    'N/A': NO_OBSTRUCTION,
 })
 
-FLARE_SLOPE_SCALE = BreaksScale(
-    [10, 12, 14, 16, 18], [100, 80, 60, 40, 20, 0], True)
+FLARE_SLOPE_SCALE = BreaksScale([10, 12, 14, 16, 18], [
+    L(100, '10.0 % or less', 1),
+    L(80, '10.1 % to 12.0 %', 2),
+    L(60, '12.1 % to 14.0 %', 3),
+    L(40, '14.1 % to 16.0 %', 4),
+    L(20, '16.1 % to 18.0 %', 5),
+    L(0, '18.1 % or more', 6),
+], True)
 
+NO_CONDITION_ISSUE = L(100, 'None', 1)
 SURFACE_CONDITION_SCALE = DictScale({
-    'Spalled': 20,
-    'Grass': 40,
-    'Dirt': 60,
-    'Cracked': 80,
-    'Other': 80,
-    'N/A': 100,
-    'None': 100,
+    'Spalled': L(20, 'Spalling', 6),
+    'Grass': L(40, 'Grass', 5),
+    'Dirt': L(60, 'Dirt', 4),
+    'Cracked': L(80, 'Cracking', 3),
+    'Other': L(80, 'Other condition issue', 2),
+    'N/A': NO_CONDITION_ISSUE,
+    'None': NO_CONDITION_ISSUE,
 })
 
-SIDEWALK_VERTICAL_FAULT_COUNT_SCALE = BreaksScale(
-    [50, 100, 150, 200], [100, 80, 60, 40, 20], False)
+SIDEWALK_VERTICAL_FAULT_COUNT_SCALE = BreaksScale([50, 100, 150, 200], [
+    L(100, '49 or fewer', 1),
+    L(80, '50  to 99', 2),
+    L(60, '100 to 149', 3),
+    L(40, '150 to 199', 4),
+    L(20, '200 or more', 5),
+], False)
 
-CURB_RAMP_VERTICAL_FAULT_COUNT_SCALE = BreaksScale(
-    [0, 1, 2, 3], [100, 80, 60, 40, 20], True)
+CURB_RAMP_VERTICAL_FAULT_COUNT_SCALE = BreaksScale([0, 1, 2, 3], [
+    L(100, '0', 1),
+    L(80, '1', 2),
+    L(60, '2', 3),
+    L(40, '3', 4),
+    L(20, '4 or more', 5),
+], True)
 
-SIDEWALK_CRACKED_PANEL_SCALE = BreaksScale(
-    [0.025, 0.05, 0.075, 0.1], [100, 80, 60, 40, 20], False)
+SIDEWALK_CRACKED_PANEL_SCALE = BreaksScale([0.025, 0.05, 0.075, 0.1], [
+    L(100, '2.4 % or less', 1),
+    L(80, '2.5 % to 4.9 %', 2),
+    L(60, '5.0 % to 7.4 %', 3),
+    L(40, '7.5 % to 9.9 %', 4),
+    L(20, '10.0 % or greater', 5),
+], False)
 
-CURB_RAMP_CRACKED_PANEL_SCALE = BreaksScale(
-    [0, 1, 2, 3], [100, 80, 60, 40, 20], True)
+CURB_RAMP_CRACKED_PANEL_SCALE = BreaksScale([0, 1, 2, 3], [
+    L(100, '0', 1),
+    L(80, '1', 2),
+    L(60, '2', 3),
+    L(40, '3', 4),
+    L(20, '4 or more', 5),
+], True)
 
-OBSTRUCTION_TYPES_SCALE = BreaksScale(
-    [0, 1], [100, 50, 0], True)
+OBSTRUCTION_TYPES_SCALE = BreaksScale([0, 1], [
+    L(100, 'No obstructions present', 1),
+    L(50, 'One type present', 2),
+    L(0, 'Two or more types present', 3),
+], True)
 
-SCORE_BUTTON_HEIGHT = BreaksScale(
-    [5, 10, 15, 49, 54, 59], [0, 20, 60, 100, 60, 20, 0], True)
+BUTTON_HEIGHT_SCALE = BreaksScale([4, 9, 14, 48, 53, 58], [
+    L(0, '4 inches or less', 1),
+    L(20, '5 to 9 inches', 2),
+    L(60, '10 to 14 inches', 3),
+    L(100, '15 to 48 inches', 4),
+    L(60, '49 to 53 inches', 5),
+    L(20, '54 to 58 inches', 6),
+    L(0, '59 inches or greater', 7),
+], True)
 
-SCORE_BUTTON_SIZE = DictScale({
-    'Very Small - < 1/2 inch': 33,
-    'Medium - roughly 1 inch': 67,
-    'Accessible - 2 inches or greater': 100,
+BUTTON_SIZE_SCALE = DictScale({
+    'Very Small - < 1/2 inch': L(33, '0.4 inches or less', 3),
+    'Medium - roughly 1 inch': L(67, '0.5 to 1.9 inches', 2),
+    'Accessible - 2 inches or greater': L(
+        100, '2 inches or greater', 1),
 })
 
-CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale(
-    [5, 6, 7, 8, 9], [100, 80, 60, 40, 20, 0], True)
+NO_BUTTON_SCALE = StaticScale(L(None, 'No button', exclude=True))
+
+CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE = BreaksScale([5, 6, 7, 8, 9], [
+    L(100, '5.0 % or less', 1),
+    L(80, '5.1 % to 6.0 %', 2),
+    L(60, '6.1 % to 7.0 %', 3),
+    L(40, '7.1 % to 8.0 %', 4),
+    L(20, '8.1 % to 9.0 %', 5),
+    L(0, '9.1 % or more', 6),
+], True)
+
+SCORE_SCALE = BreaksScale([60, 70, 80, 90, 100], [
+    L(None, '60 or less', 6),
+    L(None, '> 60 to 70', 5),
+    L(None, '> 70 to 80', 4),
+    L(None, '> 80 to 90', 3),
+    L(None, '> 90 to 100', 2),
+    L(None, 'Invalid score', 1, hidden=True),
+], True)
 
 
 class SlopeField(NumericField):
@@ -243,6 +342,7 @@ class SidewalkSegment(BaseFeature):
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreMaxCrossSlope': 0.25,
             'ScoreLargestVerticalFault': 0.25,
@@ -272,6 +372,7 @@ class SidewalkSegment(BaseFeature):
     ScoreCondition = WeightsField(
         'Condition Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreSurfaceCondition': 0.334,
             'ScoreVerticalFaultCount': 0.333,
@@ -601,10 +702,7 @@ class CurbRamp(InventoryFeature):
     ScoreRampWidth = ScaleField(
         'Ramp Width Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=(
-            ('not self.in_median', WIDTH_SCALE),
-            ('self.in_median', IN_MEDIAN_WIDTH_SCALE),
-        ),
+        scale=WIDTH_SCALE,
         value_field='RampWidth')
 
     ScoreRampCrossSlope = ScaleField(
@@ -616,7 +714,11 @@ class CurbRamp(InventoryFeature):
     ScoreRampRunningSlope = ScaleField(
         'Ramp Running Slope Score',
         condition='self.qa_complete and self.has_ramp',
-        scale=RAMP_RUNNING_SLOPE_SCALE,
+        scale=(
+            ('self.RampLength > 15*12', StaticScale(
+                L(100, 'Ramp length > 15 feet')), 2),
+            ('self.RampLength <= 15*12', RAMP_RUNNING_SLOPE_SCALE, 1),
+        ),
         value_field='RampRunningSlope')
 
     ScoreDetectableWarningType = ScaleField(
@@ -625,9 +727,9 @@ class CurbRamp(InventoryFeature):
         scale=(
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(100)),
-            ('self.has_dws', DWS_TYPE_SCALE),
-            ('not self.has_dws', StaticScale(0)),
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 3),
+            ('self.has_dws', DWS_TYPE_SCALE, 1),
+            ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
         use_description=True,
         value_field='DetectableWarningType')
@@ -638,29 +740,36 @@ class CurbRamp(InventoryFeature):
         scale=(
             # Detectable warnings are only required on ramps adjacent
             # to the street.
-            ('not self.has_gutter', StaticScale(100)),
-            ('self.has_dws', DWS_WIDTH_SCALE),
-            ('not self.has_dws', StaticScale(0)),
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 3),
+            ('self.has_dws', DWS_WIDTH_SCALE, 1),
+            ('not self.has_dws', StaticScale(L(0, 'None')), 2),
         ),
         value_field='self.dws_coverage')
 
     ScoreGutterCrossSlope = ScaleField(
         'Gutter Cross Slope Score',
-        scale=CROSS_SLOPE_SCALE,
+        scale=(
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 2),
+            ('self.has_gutter', CROSS_SLOPE_SCALE, 1),
+        ),
         condition='self.qa_complete and self.has_ramp',
         value_field='GutterCrossSlope')
 
     ScoreGutterRunningSlope = ScaleField(
         'Gutter Running Slope Score',
-        scale=GUTTER_RUNNING_SLOPE_SCALE,
+        scale=(
+            ('not self.has_gutter', UPPER_RAMP_SCALE, 2),
+            ('self.has_gutter', GUTTER_RUNNING_SLOPE_SCALE, 1),
+        ),
         condition='self.qa_complete and self.has_ramp',
         value_field='GutterRunningSlope')
 
     ScoreLandingDimensions = ScaleField(
         'Landing Dimensions Score',
         scale=(
-            ('not self.is_blended_transition', LANDING_DIMENSIONS_SCALE),
-            ('self.is_blended_transition', StaticScale(100)),
+            ('self.is_blended_transition', RAMP_RUNNING_SLOPE_MIN_SCALE, 3),
+            ('not self.has_landing', NO_LANDING_SCALE, 2),
+            ('not self.is_blended_transition', LANDING_DIMENSIONS_SCALE, 1),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='min(LandingWidth, LandingLength)')
@@ -668,9 +777,9 @@ class CurbRamp(InventoryFeature):
     ScoreLandingSlope = ScaleField(
         'Landing Slope Score',
         scale=(
-            ('not self.has_landing', StaticScale(0)),
-            ('not self.is_blended_transition', CROSS_SLOPE_SCALE),
-            ('self.is_blended_transition', StaticScale(100)),
+            ('self.is_blended_transition', RAMP_RUNNING_SLOPE_MIN_SCALE, 3),
+            ('not self.has_landing', NO_LANDING_SCALE, 2),
+            ('not self.is_blended_transition', CROSS_SLOPE_SCALE, 1),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LandingRunningSlope, LandingCrossSlope)')
@@ -678,8 +787,9 @@ class CurbRamp(InventoryFeature):
     ScoreApproachCrossSlope = ScaleField(
         'Approach Cross Slope Score',
         scale=(
-            ('self.approach_count > 0', CROSS_SLOPE_SCALE),
-            ('self.approach_count == 0', StaticScale(100))
+            ('self.approach_count > 0', CROSS_SLOPE_SCALE, 1),
+            ('self.approach_count == 0', StaticScale(
+                L(100, 'No approaches', exclude=True)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='max(LeftApproachCrossSlope, RightApproachCrossSlope)')
@@ -687,8 +797,9 @@ class CurbRamp(InventoryFeature):
     ScoreFlareSlope = ScaleField(
         'Flare Slope Score',
         scale=(
-            ('self.has_flares', FLARE_SLOPE_SCALE),
-            ('not self.has_flares', StaticScale(100)),
+            ('self.has_flares', FLARE_SLOPE_SCALE, 1),
+            ('not self.has_flares', StaticScale(
+                L(100, 'No flares', exclude=True)), 2),
         ),
         condition='self.qa_complete and self.has_ramp',
         value_field='FlareSlope')
@@ -759,6 +870,7 @@ class CurbRamp(InventoryFeature):
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete and self.has_ramp',
+        scale=SCORE_SCALE,
         weights={
             'ScoreRampWidth': 0.05,
             'ScoreRampCrossSlope': 0.1,
@@ -797,6 +909,7 @@ class CurbRamp(InventoryFeature):
     ScoreCondition = WeightsField(
         'Condition Score',
         condition='self.qa_complete and self.has_ramp',
+        scale=SCORE_SCALE,
         weights={
             'ScoreSurfaceCondition': 0.334,
             'ScorePavementFaultCount': 0.333,
@@ -956,8 +1069,9 @@ class Crosswalk(InventoryFeature):
         'Width Score',
         condition='self.qa_complete',
         scale=(
-            ('self.has_width', WIDTH_SCALE),
-            ('not self.has_width', StaticScale(100)),
+            ('self.has_width', WIDTH_SCALE, 1),
+            ('not self.has_width', StaticScale(
+                L(100, 'No painted markings', exclude=True)), 2),
         ),
         value_field='Width')
 
@@ -965,16 +1079,18 @@ class Crosswalk(InventoryFeature):
         'Cross Slope Score',
         condition='self.qa_complete',
         scale=(
-            ('self.is_midblock', StaticScale(100)),
-            ('self.is_stop_controlled', CROSS_SLOPE_SCALE),
+            ('self.is_midblock', StaticScale(
+                L(100, 'Midblock crossing', exclude=True)), 3),
+            ('self.is_stop_controlled', CROSS_SLOPE_SCALE, 1),
             ('not self.is_stop_controlled',
-             CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE),
+             CROSSWALK_UNCONTROLLED_CROSS_SLOPE_SCALE, 2),
         ),
         value_field='CrossSlope')
 
     ScoreCompliance = WeightsField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         weights={
             'ScoreWidth': 0.5,
             'ScoreCrossSlope': 0.5,
@@ -1032,15 +1148,21 @@ class PedestrianSignal(InventoryFeature):
     # Score fields
     ScoreButtonSize = ScaleField(
         'Button Size Score',
-        condition='self.qa_complete and self.has_button',
-        scale=SCORE_BUTTON_SIZE,
+        condition='self.qa_complete',
+        scale=(
+            ('not self.has_button', NO_BUTTON_SCALE, 2),
+            ('self.has_button', BUTTON_SIZE_SCALE, 1),
+        ),
         value_field='PedButtonSize',
         use_description=True)
 
     ScoreButtonHeight = ScaleField(
         'Button Height Score',
-        condition='self.qa_complete and self.has_button',
-        scale=SCORE_BUTTON_HEIGHT,
+        condition='self.qa_complete',
+        scale=(
+            ('not self.has_button', NO_BUTTON_SCALE, 2),
+            ('self.has_button', BUTTON_HEIGHT_SCALE, 1),
+        ),
         value_field='ButtonHeight')
 
     ScoreButtonPositionAppearance = MethodField(
@@ -1056,6 +1178,7 @@ class PedestrianSignal(InventoryFeature):
     ScoreCompliance = MethodField(
         'Compliance Score',
         condition='self.qa_complete',
+        scale=SCORE_SCALE,
         method_name='_compliance_score')
 
     def _position_appearance_score(self, field_name):
@@ -1090,7 +1213,8 @@ class PedestrianSignal(InventoryFeature):
 
     @property
     def has_button(self):
-        return self.PedButtonLocation not in (D('No Button'), D('N/A'))
+        return self.PedButtonLocation not in (D('No Button'), D('N/A')) and \
+            self.PedButtonSize != D('No Button')
 
     def clean(self):
         # Set irrelevant fields to N/A for signals that don't have a button.
