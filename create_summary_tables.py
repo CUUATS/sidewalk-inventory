@@ -123,7 +123,7 @@ def feature_table(query_set, summary_field, column_labels, feature_label):
         if is_hidden(level):
             continue
 
-        percent = unichr(2014)
+        percent = '&mdash;'
         if not is_excluded(level):
             percent = '{:.1f} %'.format(100*float(level['count'])/total)
 
