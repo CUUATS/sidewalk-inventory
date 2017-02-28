@@ -6,7 +6,7 @@ import unittest
 from cuuats.datamodel import D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from debug import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
+from config import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
 
 CROSS_SLOPE_VALUES = [
     (0, 2.0), (2.1, 4.0), (4.1, 6.0), (6.1, 8.0), (8.1, 10.0), (10.1, 100.0)]

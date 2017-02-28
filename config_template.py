@@ -1,5 +1,5 @@
 """
-Production database configuration.
+Database configuration.
 """
 
 # Paths to the feature classes (including the SDE path).

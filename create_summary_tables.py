@@ -4,7 +4,7 @@ import json
 import os
 from cuuats.datamodel import D
 from datamodel import CurbRamp, Crosswalk, PedestrianSignal, SidewalkSegment
-from debug import CR_PATH, CW_PATH, PS_PATH, SS_PATH
+from config import CR_PATH, CW_PATH, PS_PATH, SS_PATH
 
 SIDEWALK_SEGMENT_FIELDS = [
     ('ScoreMaxCrossSlope', 'Maximum Cross Slope'),

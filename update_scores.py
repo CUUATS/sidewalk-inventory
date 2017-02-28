@@ -4,7 +4,7 @@ Update scores for Sidewalk Inventory and Assessment features.
 
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment, D
-from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
+from config import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH
 from utils import display_progress
 
 # Register features.

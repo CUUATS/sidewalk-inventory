@@ -4,7 +4,7 @@ Aggregate scores from the Sidewalk Inventory and Assessment.
 
 import arcpy
 import os
-from production import SS_PATH, CR_PATH, CW_PATH, PS_PATH, ZONE_PATH, \
+from config import SS_PATH, CR_PATH, CW_PATH, PS_PATH, ZONE_PATH, \
     RESULT_PATH
 
 

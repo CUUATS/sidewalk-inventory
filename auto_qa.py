@@ -6,7 +6,7 @@ import argparse
 from cuuats.datamodel import D
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
+from config import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
     SS_REL_NAME
 from utils import display_progress
 

@@ -7,7 +7,7 @@ import re
 from prettytable import PrettyTable
 from datamodel import Sidewalk, CurbRamp, Crosswalk, PedestrianSignal, \
     SidewalkSegment
-from production import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
+from config import SW_PATH, CR_PATH, CW_PATH, PS_PATH, SS_PATH, \
     SEGMENT_CSV, QASTATUS_CSV
 
 date_string = datetime.date.today().strftime('%m/%d/%Y')

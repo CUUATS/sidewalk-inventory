@@ -1,5 +1,5 @@
-# Debug configuration
-debug.py
+# Database configuration
+config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
